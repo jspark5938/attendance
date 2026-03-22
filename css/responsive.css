@@ -1,0 +1,207 @@
+/* =========================================
+   RESPONSIVE BREAKPOINTS
+   Mobile First: base styles are mobile,
+   then we expand for PC with min-width queries
+   ========================================= */
+
+/* ---- MOBILE (< 768px) ---- */
+
+@media (max-width: 767px) {
+  /* Show bottom nav, hide sidebar */
+  .sidebar { display: none !important; }
+  .bottom-nav { display: flex !important; }
+  .mobile-header { display: flex !important; }
+
+  /* Main content has no left margin, has bottom padding for tab bar */
+  .main-content {
+    margin-left: 0;
+    padding-bottom: calc(var(--bottom-nav-height) + var(--space-4));
+  }
+
+  /* Full-width page header */
+  .page-header {
+    padding: var(--space-3) var(--space-4);
+    display: none; /* Mobile uses mobile-header instead */
+  }
+
+  /* Page body full-width */
+  .page-body {
+    padding: var(--space-4);
+  }
+
+  /* Toast above bottom nav */
+  #toast-container {
+    bottom: calc(var(--bottom-nav-height) + var(--space-3));
+  }
+
+  /* Grids collapse to 1 or 2 columns */
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: 1fr; }
+
+  /* Attendance buttons: text shorter on very small screens */
+  .att-btn {
+    min-width: 36px;
+    padding: var(--space-1);
+    font-size: 11px;
+  }
+
+  /* Modal takes more vertical space */
+  .modal {
+    max-height: 95vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    margin-top: auto;
+  }
+
+  .modal-backdrop {
+    align-items: flex-end;
+  }
+
+  /* Student card: slightly compact */
+  .student-card {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /* Stat cards: 2 columns */
+  .stat-cards-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Page title smaller */
+  .page-title {
+    font-size: var(--font-size-lg);
+  }
+
+  /* Quick mark bar wraps */
+  .quick-mark-bar {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+}
+
+/* ---- SMALL MOBILE (< 400px) ---- */
+
+@media (max-width: 400px) {
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+
+  .att-btn {
+    min-width: 32px;
+    font-size: 10px;
+  }
+
+  .attendance-buttons {
+    gap: 3px;
+  }
+}
+
+/* ---- TABLET (768px - 1024px) ---- */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Sidebar slightly narrower */
+  :root { --sidebar-width: 200px; }
+
+  .page-body {
+    padding: var(--space-5) var(--space-6);
+  }
+
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---- DESKTOP (>= 1024px) ---- */
+
+@media (min-width: 1024px) {
+  .page-body {
+    padding: var(--space-6) var(--space-8);
+  }
+
+  .bottom-nav { display: none !important; }
+  .mobile-header { display: none !important; }
+}
+
+/* ---- WIDE DESKTOP (>= 1280px) ---- */
+
+@media (min-width: 1280px) {
+  :root { --sidebar-width: 260px; }
+
+  .page-body {
+    padding: var(--space-8) var(--space-10);
+  }
+}
+
+/* ---- TOUCH DEVICE OPTIMIZATIONS ---- */
+
+@media (hover: none) {
+  /* Disable hover effects on touch, rely on :active instead */
+  .btn:hover,
+  .group-card:hover,
+  .sidebar-nav-item:hover,
+  .list-item:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .att-btn:hover {
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+  }
+
+  .att-btn.active {
+    /* Keep active styles even on touch */
+  }
+}
+
+/* ---- PRINT ---- */
+
+@media print {
+  .sidebar,
+  .bottom-nav,
+  .mobile-header,
+  .btn,
+  .quick-mark-bar,
+  #toast-container {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .page-body {
+    padding: 0;
+  }
+
+  .student-card {
+    break-inside: avoid;
+  }
+}
+
+/* ---- REDUCED MOTION ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---- STAT CARDS GRID (used in dashboard, stats pages) ---- */
+
+.stat-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 1200px) {
+  .stat-cards-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 767px) {
+  .stat-cards-grid { grid-template-columns: repeat(2, 1fr); }
+}

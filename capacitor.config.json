@@ -1,0 +1,19 @@
+{
+  "appId": "com.yourname.attendanceapp",
+  "appName": "출석부",
+  "webDir": ".",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "AdMob": {
+      "appId": "ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY"
+    }
+  },
+  "android": {
+    "buildOptions": {
+      "minSdkVersion": 22,
+      "targetSdkVersion": 34
+    }
+  }
+}

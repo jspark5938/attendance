@@ -1,0 +1,89 @@
+:root {
+  /* Brand Colors */
+  --color-primary: #4F46E5;
+  --color-primary-hover: #4338CA;
+  --color-primary-light: #EEF2FF;
+
+  /* Attendance Status Colors */
+  --color-present: #10B981;
+  --color-present-light: #D1FAE5;
+  --color-absent: #EF4444;
+  --color-absent-light: #FEE2E2;
+  --color-late: #F59E0B;
+  --color-late-light: #FEF3C7;
+  --color-early: #8B5CF6;
+  --color-early-light: #EDE9FE;
+
+  /* Neutral */
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #F1F5F9;
+  --color-text: #1E293B;
+  --color-text-muted: #64748B;
+  --color-border: #E2E8F0;
+  --color-border-light: #F1F5F9;
+
+  /* Premium */
+  --color-premium: #F59E0B;
+  --color-premium-light: #FFFBEB;
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --bottom-nav-height: 64px;
+  --header-height: 56px;
+  --content-max-width: 900px;
+
+  /* Typography */
+  --font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo',
+    'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 22px;
+  --font-size-2xl: 28px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height: 1.6;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.05);
+
+  /* Transitions */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* Z-index */
+  --z-sidebar: 100;
+  --z-bottom-nav: 100;
+  --z-modal-backdrop: 200;
+  --z-modal: 210;
+  --z-toast: 300;
+}
+
+/* Dark mode (future) */
+/* @media (prefers-color-scheme: dark) { ... } */

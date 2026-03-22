@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="출석부 — 학생 출결을 쉽고 빠르게 관리하세요">
+  <meta name="theme-color" content="#4F46E5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="출석부">
+
+  <title>출석부 — 출결 관리</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+
+  <!-- Pretendard font (Korean-optimized) -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" as="style"
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    onload="this.onload=null;this.rel='stylesheet'">
+
+  <!-- Flatpickr (calendar) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+
+  <!-- AdSense (uncomment when you have a publisher ID) -->
+  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+</head>
+<body>
+
+  <!-- ======== APP SHELL ======== -->
+  <div class="app-container">
+
+    <!-- SIDEBAR (PC) -->
+    <aside class="sidebar" aria-label="사이드바" role="navigation"></aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+      <!-- Mobile header -->
+      <header class="mobile-header" role="banner">
+        <div class="mobile-header-logo">
+          <span style="width:24px;height:24px;background:var(--color-primary);border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:700;margin-right:8px;">출</span>
+          출석부
+        </div>
+        <span class="mobile-header-title" style="font-weight:600; font-size:15px;"></span>
+        <div style="width:32px;"></div><!-- spacer -->
+      </header>
+
+      <!-- PC page header (dynamic per page) -->
+      <header class="page-header" role="banner" style="display:none;">
+        <div class="page-header-left">
+          <div>
+            <h1 class="page-title"></h1>
+            <div class="page-subtitle" style="display:none;"></div>
+          </div>
+        </div>
+        <div class="page-header-actions"></div>
+      </header>
+
+      <!-- Page content outlet -->
+      <main id="app-content" role="main" tabindex="-1" style="outline:none;"></main>
+
+    </div>
+
+    <!-- BOTTOM NAV (mobile) -->
+    <nav class="bottom-nav" aria-label="하단 메뉴"></nav>
+
+  </div>
+
+  <!-- ======== MODAL ======== -->
+  <div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title-text" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title-text"></h2>
+        <button class="modal-close" aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-cancel">취소</button>
+        <button class="btn btn-primary modal-confirm">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== TOAST CONTAINER ======== -->
+  <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- ======== SCRIPTS ======== -->
+
+  <!-- Flatpickr + Korean locale -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
+
+  <!-- Chart.js (deferred) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+
+  <!-- jsPDF + autoTable (deferred, premium only) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
+
+  <!-- App entry point (ES module) -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
