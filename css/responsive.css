@@ -132,15 +132,10 @@
     gap: var(--space-2);
   }
 
-  /* Group detail: hide non-essential table columns on mobile */
-  .student-table .col-age,
-  .student-table .col-gender,
-  .student-table .col-phone,
-  .student-table .col-days,
-  .student-table .col-time,
-  .student-table .col-reg,
-  .student-table .col-contract {
-    display: none;
+  /* Student table: allow horizontal scroll to see all columns (no hiding) */
+  .student-table th,
+  .student-table td {
+    white-space: nowrap;
   }
 
   /* Student search input: full width on mobile */
