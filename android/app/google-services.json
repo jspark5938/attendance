@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "276747378550",
+    "project_id": "my-attend-f60a7",
+    "storage_bucket": "my-attend-f60a7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:276747378550:android:f4e07bc3ffc6e0c167e457",
+        "android_client_info": {
+          "package_name": "com.jspark5938.attendance"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "276747378550-8269rrp12nejqigd6vsga0i965ojrufo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCs1v4MMd-8ff2VfJcoqCeHatgIM7fHtpM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "276747378550-8269rrp12nejqigd6vsga0i965ojrufo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
