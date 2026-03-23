@@ -11,7 +11,8 @@
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
-  overflow-x: hidden;
+  /* clip: sticky를 깨뜨리지 않으면서 가로 overflow 차단 */
+  overflow-x: clip;
 }
 
 body {
@@ -21,7 +22,8 @@ body {
   background: var(--color-bg);
   line-height: var(--line-height);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
+  width: 100%;
 }
 
 /* App container: sidebar + main */

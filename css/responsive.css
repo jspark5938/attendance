@@ -16,14 +16,16 @@
   .main-content {
     margin-left: 0;
     padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0));
-    overflow-x: hidden;
+    overflow-x: clip;
+    width: 100%;
   }
 
   /* Prevent horizontal overflow in page content */
   #app-content,
   .page-body {
-    overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100%;
+    width: 100%;
   }
 
   /* Mobile header title: truncate if long */
