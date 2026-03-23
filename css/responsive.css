@@ -12,10 +12,10 @@
   .bottom-nav { display: flex !important; }
   .mobile-header { display: flex !important; }
 
-  /* Main content: no left margin, extra bottom padding for ad banner */
+  /* Main content: no left margin */
   .main-content {
     margin-left: 0;
-    padding-bottom: calc(60px + var(--space-4));
+    padding-bottom: var(--space-4);
   }
 
   /* Push page content below fixed top nav bar */
@@ -34,9 +34,9 @@
     padding: var(--space-4);
   }
 
-  /* Toast above ad banner */
+  /* Toast at bottom of screen */
   #toast-container {
-    bottom: calc(60px + var(--space-4));
+    bottom: var(--space-6);
   }
 
   /* Grids collapse to 1 or 2 columns */
@@ -137,7 +137,6 @@
 
   .bottom-nav { display: none !important; }
   .mobile-header { display: none !important; }
-  .ad-container { display: none !important; }
 }
 
 /* ---- WIDE DESKTOP (>= 1280px) ---- */

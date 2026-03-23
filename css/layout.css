@@ -359,30 +359,6 @@ body {
 }
 
 /* =========================================
-   AD CONTAINER
-   ========================================= */
-
-.ad-container {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 90;
-  background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
-
-.ad-container .adsbygoogle {
-  width: 100%;
-  min-height: 50px;
-}
-
-/* =========================================
    TOAST CONTAINER
    ========================================= */
 
