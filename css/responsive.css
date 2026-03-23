@@ -16,6 +16,38 @@
   .main-content {
     margin-left: 0;
     padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0));
+    overflow-x: hidden;
+  }
+
+  /* Prevent horizontal overflow in page content */
+  #app-content,
+  .page-body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  /* Mobile header title: truncate if long */
+  .mobile-header-title {
+    flex: 1;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 var(--space-2);
+    min-width: 0;
+  }
+
+  /* Ensure list items don't overflow */
+  .list-item {
+    overflow: hidden;
+  }
+
+  /* Flex children need min-width:0 to shrink properly */
+  .group-card,
+  .student-card,
+  .card {
+    min-width: 0;
+    max-width: 100%;
   }
 
   /* Push page content below fixed top nav bar */
@@ -105,12 +137,20 @@
   .grid-3 { grid-template-columns: 1fr 1fr; }
 
   .att-btn {
-    min-width: 36px;
+    min-width: 34px;
+    min-height: 36px;
     font-size: 11px;
+    padding: var(--space-1);
   }
 
   .attendance-buttons {
-    gap: 4px;
+    gap: 3px;
+  }
+
+  /* 그룹 행에서 버튼을 아이콘 크기로 압축 */
+  .list-item .btn-sm {
+    padding: var(--space-1) var(--space-2);
+    font-size: 11px;
   }
 }
 
