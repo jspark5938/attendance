@@ -137,18 +137,18 @@ export class GroupDetailPage {
 
     return `
       <div style="overflow-x:auto;">
-        <table style="width:100%; border-collapse:collapse; font-size: var(--font-size-sm);">
+        <table class="student-table" style="width:100%; border-collapse:collapse; font-size: var(--font-size-sm);">
           <thead>
             <tr style="background:var(--color-surface-2);">
               <th style="${thStyle()}">번호</th>
               <th style="${thStyle('left')}">이름</th>
-              <th style="${thStyle()}">나이</th>
-              <th style="${thStyle()}">성별</th>
-              <th style="${thStyle('left')}">연락처</th>
-              <th style="${thStyle('left')}">출석 요일</th>
-              <th style="${thStyle()}">시간</th>
-              <th style="${thStyle()}">등록일</th>
-              <th style="${thStyle()}">계약</th>
+              <th style="${thStyle()}" class="col-age">나이</th>
+              <th style="${thStyle()}" class="col-gender">성별</th>
+              <th style="${thStyle('left')}" class="col-phone">연락처</th>
+              <th style="${thStyle('left')}" class="col-days">출석 요일</th>
+              <th style="${thStyle()}" class="col-time">시간</th>
+              <th style="${thStyle()}" class="col-reg">등록일</th>
+              <th style="${thStyle()}" class="col-contract">계약</th>
               <th style="${thStyle()}">오늘</th>
               <th style="${thStyle()}">관리</th>
             </tr>
@@ -183,13 +183,13 @@ export class GroupDetailPage {
             ${escapeHtml(s.name)}
           </button>
         </td>
-        <td style="${tdStyle()}">${s.age ?? '—'}</td>
-        <td style="${tdStyle()}">${GENDER_LABELS[s.gender] || '—'}</td>
-        <td style="${tdStyle('left')}">${s.phone ? `<a href="tel:${escapeHtml(s.phone)}" style="color:var(--color-primary);">${escapeHtml(s.phone)}</a>` : '—'}</td>
-        <td style="${tdStyle('left')}">${escapeHtml(days)}</td>
-        <td style="${tdStyle()}">${escapeHtml(timeStr)}</td>
-        <td style="${tdStyle()}" title="${registered}">${registered}</td>
-        <td style="${tdStyle()}">${this._contractCellHtml(s)}</td>
+        <td style="${tdStyle()}" class="col-age">${s.age ?? '—'}</td>
+        <td style="${tdStyle()}" class="col-gender">${GENDER_LABELS[s.gender] || '—'}</td>
+        <td style="${tdStyle('left')}" class="col-phone">${s.phone ? `<a href="tel:${escapeHtml(s.phone)}" style="color:var(--color-primary);">${escapeHtml(s.phone)}</a>` : '—'}</td>
+        <td style="${tdStyle('left')}" class="col-days">${escapeHtml(days)}</td>
+        <td style="${tdStyle()}" class="col-time">${escapeHtml(timeStr)}</td>
+        <td style="${tdStyle()}" class="col-reg" title="${registered}">${registered}</td>
+        <td style="${tdStyle()}" class="col-contract">${this._contractCellHtml(s)}</td>
         <td style="${tdStyle()}">
           ${att
             ? `<span class="badge badge-${att.status}">${STATUS_LABELS[att.status]}</span>`
