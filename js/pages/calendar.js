@@ -278,7 +278,7 @@ export class CalendarPage {
             <button id="toggle-closed-btn" class="btn btn-sm" style="${isClosed ? 'color:var(--color-absent);border:1px solid var(--color-absent);' : 'color:var(--color-text-muted);border:1px solid var(--color-border);'} background:transparent; border-radius:var(--radius-full); font-size:12px; padding:2px 10px;">
               ${isClosed ? '휴무 해제' : '휴무 설정'}
             </button>
-            ${!isClosed ? `<a href="#/groups/${this.groupId}/attend?date=${dateStr}" class="btn btn-primary btn-sm">수정</a>` : ''}
+            ${!isClosed ? `<a href="#/groups/${this.groupId}/attend?date=${dateStr}" class="btn btn-primary btn-sm">${isFuture ? '출석 체크' : '수정'}</a>` : ''}
           </div>
         </div>
         <div>

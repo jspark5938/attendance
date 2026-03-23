@@ -7,11 +7,13 @@
 import { GroupsDB } from '../db/groups.js';
 import { StudentsDB } from '../db/students.js';
 import { AttendanceDB } from '../db/attendance.js';
+import { ContractsDB } from '../db/contracts.js';
 import { ClosedDaysDB } from '../db/closedDays.js';
 import { escapeHtml } from '../utils/dom.js';
-import { todayStr, shiftMonth, formatYearMonthKo, getDaysInMonth } from '../utils/date.js';
+import { todayStr, shiftMonth, formatYearMonthKo, getDaysInMonth, daysToNextClass } from '../utils/date.js';
 import { HolidayService } from '../services/holidays.js';
 import { STATUS_LABELS } from '../utils/i18n.js';
+import Modal from '../components/modal.js';
 import Toast from '../components/toast.js';
 
 const DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
@@ -50,32 +52,24 @@ export class CalendarAllPage {
 
   async mount() {
     this.groups = await GroupsDB.getAll();
-
-    // 그룹 필터 버튼 렌더
     this._renderFilter();
-
     document.getElementById('prev-month')?.addEventListener('click', () => this._changeMonth(-1));
     document.getElementById('next-month')?.addEventListener('click', () => this._changeMonth(1));
-
     await this._renderCalendar();
   }
 
-  // 표시할 그룹 ID 집합 (기본: 전체)
   get _activeGroupIds() {
-    const stored = this._activeIds;
-    return stored ?? new Set(this.groups.map(g => g.id));
+    return this._activeIds ?? new Set(this.groups.map(g => g.id));
   }
 
   _renderFilter() {
     const el = document.getElementById('cal-filter');
     if (!el || this.groups.length === 0) return;
-
     if (!this._activeIds) this._activeIds = new Set(this.groups.map(g => g.id));
 
     el.innerHTML = `
       <span style="font-size:12px; font-weight:600; color:var(--color-text-muted); align-self:center;">그룹:</span>
-      <button class="btn btn-sm ${this._activeIds.size === this.groups.length ? 'btn-primary' : 'btn-secondary'}"
-        id="filter-all">전체</button>
+      <button class="btn btn-sm ${this._activeIds.size === this.groups.length ? 'btn-primary' : 'btn-secondary'}" id="filter-all">전체</button>
       ${this.groups.map(g => `
         <button class="btn btn-sm filter-group-btn ${this._activeIds.has(g.id) ? 'btn-primary' : 'btn-secondary'}"
           data-id="${g.id}"
@@ -91,7 +85,6 @@ export class CalendarAllPage {
       this._renderFilter();
       await this._renderCalendar();
     });
-
     document.querySelectorAll('.filter-group-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
@@ -113,6 +106,29 @@ export class CalendarAllPage {
     await this._renderCalendar();
   }
 
+  async _loadGroupData(startDate, endDate) {
+    const activeGroups = this.groups.filter(g => this._activeIds?.has(g.id) ?? true);
+    return Promise.all(activeGroups.map(async g => {
+      const [students, recordMap, closedDays, makeupRecords, contracts] = await Promise.all([
+        StudentsDB.getByGroup(g.id),
+        AttendanceDB.getByGroupDateRange(g.id, startDate, endDate),
+        ClosedDaysDB.getSetByGroupDateRange(g.id, startDate, endDate),
+        AttendanceDB.getMakeupsByGroupDateRange(g.id, startDate, endDate),
+        ContractsDB.getByGroup(g.id),
+      ]);
+      const makeupDates = new Map();
+      makeupRecords.forEach(r => {
+        if (!makeupDates.has(r.makeupDate)) makeupDates.set(r.makeupDate, new Set());
+        makeupDates.get(r.makeupDate).add(r.studentId);
+      });
+      const contractMap = {};
+      contracts.filter(c => c.status === 'active').forEach(c => {
+        if (!contractMap[c.studentId]) contractMap[c.studentId] = c;
+      });
+      return { group: g, students, recordMap, closedDays, makeupDates, contractMap };
+    }));
+  }
+
   async _renderCalendar() {
     const container = document.getElementById('calendar-container');
     if (!container) return;
@@ -132,24 +148,10 @@ export class CalendarAllPage {
     const startDate = days[0];
     const endDate = days[days.length - 1];
 
-    // 활성 그룹별 데이터 로드
-    const activeGroups = this.groups.filter(g => this._activeIds?.has(g.id) ?? true);
-    const groupData = await Promise.all(activeGroups.map(async g => {
-      const students = await StudentsDB.getByGroup(g.id);
-      const recordMap = await AttendanceDB.getByGroupDateRange(g.id, startDate, endDate);
-      const closedDays = await ClosedDaysDB.getSetByGroupDateRange(g.id, startDate, endDate);
-      // 보충강의 날짜 맵: { makeupDate: Set<studentId> }
-      const makeupRecords = await AttendanceDB.getMakeupsByGroupDateRange(g.id, startDate, endDate);
-      const makeupDates = new Map();
-      makeupRecords.forEach(r => {
-        if (!makeupDates.has(r.makeupDate)) makeupDates.set(r.makeupDate, new Set());
-        makeupDates.get(r.makeupDate).add(r.studentId);
-      });
-      return { group: g, students, recordMap, closedDays, makeupDates };
-    }));
+    const groupData = await this._loadGroupData(startDate, endDate);
 
-    // 날짜별 통합 요약 계산
-    const daySummary = {}; // { date: { present, absent, late, early, total, scheduled, closedCount } }
+    // 날짜별 통합 요약
+    const daySummary = {};
     days.forEach(date => {
       let present = 0, absent = 0, late = 0, early = 0, total = 0, scheduled = 0, closedCount = 0;
       const [dy, dm, dd] = date.split('-');
@@ -172,7 +174,7 @@ export class CalendarAllPage {
     });
 
     const firstDayDate = new Date(year, month - 1, 1);
-    const startWeekday = firstDayDate.getDay(); // 0=일
+    const startWeekday = firstDayDate.getDay();
     const today = todayStr();
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     const holidays = await HolidayService.getHolidaysForMonth(year, month);
@@ -187,19 +189,17 @@ export class CalendarAllPage {
         `).join('')}
     `;
 
-    // 첫 날 앞 빈 칸
     for (let i = 0; i < startWeekday; i++) html += `<div></div>`;
 
     days.forEach((dateStr, idx) => {
       const dayNum = idx + 1;
       const dow = (startWeekday + idx) % 7;
       const isToday = dateStr === today;
-      const isFuture = dateStr > today;
+      const isFutureDate = dateStr > today;
       const sum = daySummary[dateStr];
       const hasData = (sum.present + sum.absent + sum.late + sum.early) > 0;
       const rate = sum.total > 0 && hasData
-        ? Math.round((sum.present + sum.late + sum.early) / sum.total * 100)
-        : null;
+        ? Math.round((sum.present + sum.late + sum.early) / sum.total * 100) : null;
       const holiday = holidays.get(dateStr) || null;
       const isHoliday = !!holiday;
       const allClosed = sum.groupCount > 0 && sum.closedCount === sum.groupCount;
@@ -220,10 +220,7 @@ export class CalendarAllPage {
             color:${textColor};
             padding:6px 4px;
             min-height:64px;
-            display:flex;
-            flex-direction:column;
-            align-items:center;
-            gap:3px;
+            display:flex; flex-direction:column; align-items:center; gap:3px;
             transition:background var(--transition-fast);
             border:1px solid ${isToday ? 'var(--color-primary)' : 'transparent'};
             ${allClosed && !isToday ? 'opacity:0.7;' : ''}
@@ -249,8 +246,6 @@ export class CalendarAllPage {
     });
 
     html += `</div>
-
-    <!-- 범례 -->
     <div style="display:flex; gap:var(--space-4); margin-top:var(--space-4); padding-top:var(--space-3); border-top:1px solid var(--color-border-light); flex-wrap:wrap;">
       <span style="font-size:12px; color:var(--color-text-muted);">숫자: </span>
       <span class="att-summary-item" style="font-size:12px;">
@@ -262,12 +257,11 @@ export class CalendarAllPage {
       <span class="att-summary-item" style="font-size:12px;">
         <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--color-late-light);border:1px solid var(--color-late);margin-right:3px;"></span>지각
       </span>
-      <span style="font-size:12px; color:var(--color-text-muted); margin-left:auto;">% = 출석률 (출석+지각+조퇴 / 전체)</span>
+      <span style="font-size:12px; color:var(--color-text-muted); margin-left:auto;">% = 출석률</span>
     </div>`;
 
     container.innerHTML = html;
 
-    // 날짜 셀 이벤트 — 이벤트 위임 방식 (event delegation)
     container.addEventListener('mouseover', (e) => {
       const cell = e.target.closest('.cal-day-cell');
       if (!cell || cell.dataset.date === today) return;
@@ -285,41 +279,73 @@ export class CalendarAllPage {
     });
   }
 
+  // ── 날짜 상세 패널 ─────────────────────────────────────────────
+
   async _showDayDetail(dateStr, groupData) {
     const el = document.getElementById('day-detail');
     if (!el) return;
 
     const [y, m, d] = dateStr.split('-');
-    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     const dowIdx = new Date(+y, +m - 1, +d).getDay();
-    const dow = dayNames[dowIdx];
+    const dow = DOW_KO[dowIdx];
     const korDay = DOW_KO[dowIdx];
     const today = todayStr();
-    const isFuture = dateStr > today;
+    const isFutureDate = dateStr > today;
+
+    const renderRow = (student, record, isMakeup, isScheduled, isGroupClosed) => {
+      const isUnrecorded = !record;
+      const isAbsent = record?.status === 'absent';
+      const showAbsenceBtn = isScheduled && !isGroupClosed && (isUnrecorded || isAbsent);
+
+      let badge = '';
+      if (record) {
+        const label = { present: '출석', absent: '결석', late: '지각', early: '조퇴' }[record.status] || record.status;
+        const extra = record.absentType ? this._absentTypeLabel(record.absentType, record.makeupDate) : '';
+        badge = `<span class="badge badge-${record.status}" style="margin-left:auto; flex-shrink:0;">${label}${extra}</span>`;
+      } else if (!isFutureDate) {
+        badge = `<span class="badge badge-none" style="margin-left:auto; flex-shrink:0;">미입력</span>`;
+      }
+
+      return `
+        <div class="list-item" style="flex-wrap:wrap; gap:4px;">
+          <div class="student-number">${student.number}</div>
+          <div class="student-name">${escapeHtml(student.name)}</div>
+          ${isMakeup ? `<span style="font-size:10px; font-weight:600; color:var(--color-primary); background:var(--color-primary-light,#e8f4ff); border:1px solid var(--color-primary); border-radius:var(--radius-full); padding:0 6px; flex-shrink:0;">보충</span>` : ''}
+          ${badge}
+          ${showAbsenceBtn ? `
+            <button class="btn btn-sm absence-action-btn"
+              data-student-id="${student.id}"
+              data-group-id="${student.groupId}"
+              style="font-size:11px; padding:2px 8px; color:var(--color-absent); border:1px solid var(--color-absent); background:transparent; border-radius:var(--radius-full);">
+              결석처리
+            </button>
+          ` : ''}
+        </div>
+      `;
+    };
 
     let html = `
       <div class="card">
         <div class="card-header">
-          <div class="card-title">${+m}월 ${+d}일 (${dow}) ${isFuture ? '출석 예정' : '출석 현황'}</div>
+          <div class="card-title">${+m}월 ${+d}일 (${dow}) ${isFutureDate ? '출석 예정' : '출석 현황'}</div>
         </div>
     `;
 
-    let hasAnyScheduled = false;
+    let hasAnyContent = false;
 
-    for (const { group, students, recordMap, closedDays, makeupDates } of groupData) {
+    for (const { group, students, recordMap, closedDays, makeupDates, contractMap } of groupData) {
       const makeupStudentIds = makeupDates?.get(dateStr) ?? new Set();
       const scheduledStudents = students.filter(s =>
         s.attendanceDays?.includes(korDay) || makeupStudentIds.has(s.id));
       const unscheduledWithRecord = students.filter(s =>
-        !s.attendanceDays?.includes(korDay) && !makeupStudentIds.has(s.id) && recordMap[`${s.id}_${dateStr}`]
-      );
+        !s.attendanceDays?.includes(korDay) && !makeupStudentIds.has(s.id) && recordMap[`${s.id}_${dateStr}`]);
       const isGroupClosed = closedDays.has(dateStr);
 
       if (scheduledStudents.length === 0 && unscheduledWithRecord.length === 0 && !isGroupClosed) continue;
-      hasAnyScheduled = true;
+      hasAnyContent = true;
 
       html += `
-        <div style="padding:var(--space-3) var(--space-5); border-bottom:1px solid var(--color-border-light); ${isGroupClosed ? 'opacity:0.6;' : ''}">
+        <div style="padding:var(--space-3) var(--space-5); border-bottom:1px solid var(--color-border-light);">
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-2);">
             <div style="display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px;">
               <span style="width:10px;height:10px;border-radius:50%;background:${escapeHtml(group.color)};display:inline-block;"></span>
@@ -328,69 +354,38 @@ export class CalendarAllPage {
                 ? `<span style="font-size:11px; font-weight:700; color:var(--color-text-muted); background:var(--color-border); border-radius:3px; padding:0 5px;">휴무</span>`
                 : scheduledStudents.length > 0 ? `<span style="font-size:12px; font-weight:400; color:var(--color-text-muted);">${scheduledStudents.length}명 예정</span>` : ''}
             </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <button class="toggle-group-closed-btn btn btn-sm" data-group-id="${group.id}" style="${isGroupClosed ? 'color:var(--color-absent);border:1px solid var(--color-absent);' : 'color:var(--color-text-muted);border:1px solid var(--color-border);'} background:transparent; border-radius:var(--radius-full); font-size:11px; padding:2px 8px;">
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="toggle-group-closed-btn btn btn-sm" data-group-id="${group.id}"
+                style="${isGroupClosed ? 'color:var(--color-absent);border:1px solid var(--color-absent);' : 'color:var(--color-text-muted);border:1px solid var(--color-border);'} background:transparent; border-radius:var(--radius-full); font-size:11px; padding:2px 8px;">
                 ${isGroupClosed ? '휴무 해제' : '휴무 설정'}
               </button>
-              ${!isFuture && !isGroupClosed ? `<a href="#/groups/${group.id}/attend?date=${dateStr}" class="btn btn-outline btn-sm">수정</a>` : ''}
+              ${!isGroupClosed ? `<a href="#/groups/${group.id}/attend?date=${dateStr}" class="btn btn-outline btn-sm">${isFutureDate ? '출석 체크' : '수정'}</a>` : ''}
             </div>
           </div>
+          ${isGroupClosed ? '' : `
+            ${scheduledStudents.length > 0 ? `
+              <div style="padding:var(--space-1) 0 var(--space-1) var(--space-1); font-size:11px; font-weight:700; color:var(--color-text-muted);">
+                출석 예정 · ${scheduledStudents.length}명
+              </div>
+              ${scheduledStudents.map(s => {
+                const isMakeup = makeupStudentIds.has(s.id) && !s.attendanceDays?.includes(korDay);
+                return renderRow(s, recordMap[`${s.id}_${dateStr}`], isMakeup, true, isGroupClosed);
+              }).join('')}
+            ` : ''}
+            ${unscheduledWithRecord.length > 0 ? `
+              <div style="padding:var(--space-1) 0 var(--space-1) var(--space-1); font-size:11px; font-weight:700; color:var(--color-text-muted); margin-top:var(--space-1);">
+                기타 출석 · ${unscheduledWithRecord.length}명
+              </div>
+              ${unscheduledWithRecord.map(s =>
+                renderRow(s, recordMap[`${s.id}_${dateStr}`], false, false, isGroupClosed)
+              ).join('')}
+            ` : ''}
+          `}
+        </div>
       `;
-
-      if (scheduledStudents.length > 0) {
-        html += `<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:${unscheduledWithRecord.length > 0 ? 'var(--space-2)' : '0'};">
-          ${scheduledStudents.map(student => {
-            const rec = recordMap[`${student.id}_${dateStr}`];
-            return `
-              <span style="
-                display:inline-flex; align-items:center; gap:4px;
-                padding:3px 8px; border-radius:var(--radius-full);
-                font-size:12px; font-weight:500;
-                background:${rec ? `var(--color-${rec.status}-light, var(--color-surface-2))` : 'var(--color-surface-2)'};
-                color:${rec ? `var(--color-${rec.status}, var(--color-text-muted))` : 'var(--color-text-muted)'};
-                border:1px solid ${rec ? `var(--color-${rec.status}, var(--color-border))` : 'var(--color-border)'};
-              ">
-                ${escapeHtml(student.name)}
-                ${makeupStudentIds.has(student.id) && !student.attendanceDays?.includes(korDay)
-                  ? `<span style="font-size:10px; color:var(--color-primary);">보충</span>`
-                  : ''}
-                ${rec
-                  ? `<span style="font-size:10px;">${STATUS_LABELS[rec.status]}</span>`
-                  : isFuture ? '' : '<span style="font-size:10px; color:var(--color-late);">미입력</span>'}
-              </span>
-            `;
-          }).join('')}
-        </div>`;
-      }
-
-      if (unscheduledWithRecord.length > 0) {
-        html += `
-          <div style="font-size:11px; color:var(--color-text-muted); margin-top:var(--space-1); margin-bottom:4px;">기타</div>
-          <div style="display:flex; flex-wrap:wrap; gap:6px;">
-            ${unscheduledWithRecord.map(student => {
-              const rec = recordMap[`${student.id}_${dateStr}`];
-              return `
-                <span style="
-                  display:inline-flex; align-items:center; gap:4px;
-                  padding:3px 8px; border-radius:var(--radius-full);
-                  font-size:12px; font-weight:500;
-                  background:var(--color-${rec.status}-light, var(--color-surface-2));
-                  color:var(--color-${rec.status}, var(--color-text-muted));
-                  border:1px solid var(--color-${rec.status}, var(--color-border));
-                ">
-                  ${escapeHtml(student.name)}
-                  <span style="font-size:10px;">${STATUS_LABELS[rec.status]}</span>
-                </span>
-              `;
-            }).join('')}
-          </div>
-        `;
-      }
-
-      html += `</div>`;
     }
 
-    if (!hasAnyScheduled) {
+    if (!hasAnyContent) {
       html += `<div class="empty-state" style="padding:var(--space-8);">
         <div class="empty-state-desc">이 날은 출석 예정 학생이 없습니다.</div>
       </div>`;
@@ -399,28 +394,168 @@ export class CalendarAllPage {
     html += `</div>`;
     el.innerHTML = html;
 
-    // 그룹별 휴무 토글 버튼
+    // 휴무 토글
     el.querySelectorAll('.toggle-group-closed-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const gid = btn.dataset.groupId;
         const nowClosed = await ClosedDaysDB.toggle(gid, dateStr);
         Toast.success(nowClosed ? '휴무로 설정했습니다.' : '휴무를 해제했습니다.');
         await this._renderCalendar();
-        // groupData 갱신 후 detail 재렌더
-        const activeGroups = this.groups.filter(g => this._activeIds?.has(g.id) ?? true);
         const [year2, month2] = dateStr.slice(0, 7).split('-').map(Number);
         const days2 = getDaysInMonth(year2, month2);
-        const newGroupData = await Promise.all(activeGroups.map(async g => {
-          const students = await StudentsDB.getByGroup(g.id);
-          const recordMap = await AttendanceDB.getByGroupDateRange(g.id, days2[0], days2[days2.length - 1]);
-          const closedDays = await ClosedDaysDB.getSetByGroupDateRange(g.id, days2[0], days2[days2.length - 1]);
-          return { group: g, students, recordMap, closedDays };
-        }));
+        const newGroupData = await this._loadGroupData(days2[0], days2[days2.length - 1]);
         await this._showDayDetail(dateStr, newGroupData);
       });
     });
 
+    // 결석처리 버튼
+    el.querySelectorAll('.absence-action-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const studentId = btn.dataset.studentId;
+        const groupId   = btn.dataset.groupId;
+        const gd = groupData.find(g => g.group.id === groupId);
+        if (!gd) return;
+        const student = gd.students.find(s => s.id === studentId);
+        if (student) await this._openAbsenceModal(student, dateStr, gd.contractMap, groupId, groupData);
+      });
+    });
+
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── 결석 처리 모달 ─────────────────────────────────────────────
+
+  async _openAbsenceModal(student, dateStr, contractMap, groupId, groupData) {
+    const contract  = contractMap[student.id] || null;
+    const hasPeriod = contract?.type === 'period';
+    const hasCount  = contract?.type === 'count';
+
+    const body = `
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div style="font-size:13px; color:var(--color-text-muted); padding-bottom:4px;">
+          <strong>${escapeHtml(student.name)}</strong> · ${dateStr}
+        </div>
+
+        <div id="absence-options" style="display:flex; flex-direction:column; gap:8px;">
+          <button class="btn btn-secondary absence-opt" data-type="normal"
+            style="text-align:left; height:auto; padding:10px 14px; display:block;">
+            <div style="font-weight:600;">단순 결석</div>
+            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">출석부에 결석으로 기록합니다</div>
+          </button>
+
+          <button class="btn btn-secondary absence-opt" data-type="makeup"
+            style="text-align:left; height:auto; padding:10px 14px; display:block;">
+            <div style="font-weight:600;">보충강의 예정</div>
+            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">결석 처리 후 보충강의 날짜를 입력합니다</div>
+          </button>
+
+          <button class="btn btn-secondary absence-opt" data-type="extend"
+            ${hasPeriod ? '' : 'disabled'}
+            style="text-align:left; height:auto; padding:10px 14px; display:block; ${hasPeriod ? '' : 'opacity:0.4; cursor:not-allowed;'}">
+            <div style="font-weight:600;">기간 연장 <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">(기간제)</span></div>
+            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">
+              ${hasPeriod ? `계약 종료일을 1일 연장합니다 (현재: ${contract.endDate})` : '활성 기간제 계약이 없습니다'}
+            </div>
+          </button>
+
+          <button class="btn btn-secondary absence-opt" data-type="no_deduct"
+            ${hasCount ? '' : 'disabled'}
+            style="text-align:left; height:auto; padding:10px 14px; display:block; ${hasCount ? '' : 'opacity:0.4; cursor:not-allowed;'}">
+            <div style="font-weight:600;">횟수 차감 없음 <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">(횟수제)</span></div>
+            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">
+              ${hasCount ? '결석 처리하되 남은 횟수에서 차감하지 않습니다' : '활성 횟수제 계약이 없습니다'}
+            </div>
+          </button>
+        </div>
+
+        <div id="makeup-date-panel" style="display:none; padding:12px; background:var(--color-surface-2); border-radius:var(--radius-md); border:1px solid var(--color-border);">
+          <div style="font-size:13px; font-weight:600; margin-bottom:8px;">보충강의 날짜 선택</div>
+          <input type="date" id="makeup-date-input" class="form-input" style="width:100%; margin-bottom:8px;" min="${dateStr}">
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary btn-sm" id="makeup-confirm-btn" style="flex:1;">확인</button>
+            <button class="btn btn-secondary btn-sm" id="makeup-back-btn" style="flex:1;">돌아가기</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    Modal.open({ title: '결석 처리', body, hideConfirm: true, cancelText: '닫기' });
+
+    const backdrop = document.getElementById('modal-backdrop');
+
+    backdrop.querySelectorAll('.absence-opt').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (btn.disabled) return;
+        const type = btn.dataset.type;
+        if (type === 'makeup') {
+          backdrop.querySelector('#absence-options').style.display = 'none';
+          backdrop.querySelector('#makeup-date-panel').style.display = 'block';
+          return;
+        }
+        await this._applyAbsence(student, groupId, dateStr, type, null, contractMap);
+        Modal.close();
+        const [year2, month2] = dateStr.slice(0, 7).split('-').map(Number);
+        const days2 = getDaysInMonth(year2, month2);
+        const newGroupData = await this._loadGroupData(days2[0], days2[days2.length - 1]);
+        await this._renderCalendar();
+        await this._showDayDetail(dateStr, newGroupData);
+      });
+    });
+
+    backdrop.querySelector('#makeup-confirm-btn')?.addEventListener('click', async () => {
+      const makeupDate = backdrop.querySelector('#makeup-date-input').value;
+      if (!makeupDate) { Toast.error('날짜를 선택해주세요.'); return; }
+      await this._applyAbsence(student, groupId, dateStr, 'makeup', makeupDate, contractMap);
+      Modal.close();
+      const [year2, month2] = dateStr.slice(0, 7).split('-').map(Number);
+      const days2 = getDaysInMonth(year2, month2);
+      const newGroupData = await this._loadGroupData(days2[0], days2[days2.length - 1]);
+      await this._renderCalendar();
+      await this._showDayDetail(dateStr, newGroupData);
+    });
+
+    backdrop.querySelector('#makeup-back-btn')?.addEventListener('click', () => {
+      backdrop.querySelector('#makeup-date-panel').style.display = 'none';
+      backdrop.querySelector('#absence-options').style.display = 'flex';
+    });
+  }
+
+  async _applyAbsence(student, groupId, dateStr, absentType, makeupDate, contractMap) {
+    await AttendanceDB.set({
+      studentId: student.id,
+      groupId,
+      date: dateStr,
+      status: 'absent',
+      absentType,
+      makeupDate: makeupDate || null,
+    });
+
+    if (absentType === 'extend') {
+      const contract = contractMap[student.id];
+      if (contract) {
+        const days = daysToNextClass(contract.endDate, student.attendanceDays);
+        await ContractsDB.extendEndDate(contract.id, days);
+      }
+    }
+
+    const labels = {
+      normal: '단순 결석',
+      makeup: makeupDate ? `보충강의 예정 (${makeupDate})` : '보충강의 예정',
+      extend: '기간 연장',
+      no_deduct: '횟수 차감 없음',
+    };
+    Toast.success(`${escapeHtml(student.name)} — ${labels[absentType] || '결석'} 처리 완료`);
+  }
+
+  _absentTypeLabel(absentType, makeupDate) {
+    const map = {
+      normal: '',
+      makeup: makeupDate ? ` (보충 ${makeupDate})` : ' (보충예정)',
+      extend: ' (기간연장)',
+      no_deduct: ' (횟수무시)',
+    };
+    return map[absentType] || '';
   }
 
   destroy() {}
