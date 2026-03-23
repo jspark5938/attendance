@@ -1,22 +1,28 @@
 /**
  * Premium tier gating service
- * All features are open to all users.
  */
 
-import { put } from '../db/database.js';
+import { getByKey, put } from '../db/database.js';
 import store from '../state/store.js';
+
+const VALID_TOKENS = ['PREMIUM2024'];
 
 export const PremiumService = {
   async load() {
-    store.set('isPremium', true);
-    return true;
+    const record = await getByKey('settings', 'premium_status');
+    const isPremium = record?.value === true;
+    store.set('isPremium', isPremium);
+    return isPremium;
   },
 
   async isPremium() {
-    return true;
+    return store.get('isPremium') ?? false;
   },
 
   async activate(token = 'manual') {
+    if (token !== 'manual' && !VALID_TOKENS.includes(token)) {
+      throw new Error('유효하지 않은 코드입니다.');
+    }
     await put('settings', { key: 'premium_status', value: true });
     await put('settings', { key: 'premium_token', value: token });
     await put('settings', { key: 'premium_activatedAt', value: new Date().toISOString() });
@@ -25,7 +31,7 @@ export const PremiumService = {
 
   async deactivate() {
     await put('settings', { key: 'premium_status', value: false });
-    store.set('isPremium', true); // always keep premium active
+    store.set('isPremium', false);
   },
 
   async canAddGroup() {
