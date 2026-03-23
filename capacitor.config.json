@@ -1,13 +1,13 @@
 {
-  "appId": "com.yourname.attendanceapp",
+  "appId": "com.jspark5938.attendance",
   "appName": "출석부",
-  "webDir": ".",
+  "webDir": "www",
   "server": {
     "androidScheme": "https"
   },
   "plugins": {
     "AdMob": {
-      "appId": "ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY"
+      "appId": "ca-app-pub-1007656354860622"
     }
   },
   "android": {
