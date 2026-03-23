@@ -5,7 +5,7 @@
  * This deterministic key means upsert = simple put(), no read-before-write needed.
  */
 
-import { getByKey, put, del, getAllByIndex, deleteByIndex, openDB } from './database.js';
+import { getByKey, put, del, getAllByIndex, deleteByIndex, putBulk } from './database.js';
 
 export const AttendanceDB = {
   /**
@@ -48,18 +48,10 @@ export const AttendanceDB = {
    * Returns a map: { [studentId]: record }
    */
   async getByGroupDate(groupId, date) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx  = db.transaction('attendance', 'readonly');
-      const idx = tx.objectStore('attendance').index('by_group_date');
-      const req = idx.getAll(IDBKeyRange.only([groupId, date]));
-      req.onsuccess = () => {
-        const map = {};
-        req.result.forEach(r => { map[r.studentId] = r; });
-        resolve(map);
-      };
-      req.onerror = (e) => reject(e.target.error);
-    });
+    const all = await getAllByIndex('attendance', 'by_group', groupId);
+    const map = {};
+    all.filter(r => r.date === date).forEach(r => { map[r.studentId] = r; });
+    return map;
   },
 
   /**
@@ -102,25 +94,16 @@ export const AttendanceDB = {
    * Bulk set attendance for multiple students on a date (e.g. "mark all present")
    */
   async bulkSet(records) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx    = db.transaction('attendance', 'readwrite');
-      const store = tx.objectStore('attendance');
-      records.forEach(r => {
-        const record = {
-          id: `${r.studentId}_${r.date}`,
-          studentId: r.studentId,
-          groupId:   r.groupId,
-          date:      r.date,
-          status:    r.status,
-          note:      r.note || '',
-          markedAt:  new Date().toISOString(),
-        };
-        store.put(record);
-      });
-      tx.oncomplete = () => resolve();
-      tx.onerror    = (e) => reject(e.target.error);
-    });
+    const prepared = records.map(r => ({
+      id: `${r.studentId}_${r.date}`,
+      studentId: r.studentId,
+      groupId:   r.groupId,
+      date:      r.date,
+      status:    r.status,
+      note:      r.note || '',
+      markedAt:  new Date().toISOString(),
+    }));
+    return putBulk('attendance', prepared);
   },
 
   /**

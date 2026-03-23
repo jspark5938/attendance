@@ -7,11 +7,38 @@ import { exportAllData, importAllData, getByKey, put } from '../db/database.js';
 import Toast from '../components/toast.js';
 import Modal from '../components/modal.js';
 import { MESSAGES } from '../utils/i18n.js';
+import { AuthService } from '../services/auth.js';
+import { readLegacyIndexedDB, hasLegacyData } from '../services/migration.js';
+
 export class SettingsPage {
+  constructor() {
+    this._hasLegacy = false;
+  }
+
   async render() {
     const alertSettings = await getByKey('settings', 'contract_alert') ?? {};
     const periodDays     = alertSettings.periodDays     ?? 7;
     const countRemaining = alertSettings.countRemaining ?? 3;
+
+    const user = AuthService.currentUser();
+    this._hasLegacy = await hasLegacyData();
+
+    const avatarUrl = user?.photoURL
+      ? `<img src="${user.photoURL}" alt="프로필" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">`
+      : `<div style="width:48px;height:48px;border-radius:50%;background:var(--color-primary);display:flex;align-items:center;justify-content:center;color:white;font-size:20px;font-weight:700;">${(user?.displayName || '?')[0]}</div>`;
+
+    const migrationSection = this._hasLegacy ? `
+      <!-- Data migration from IndexedDB -->
+      <div class="card" style="margin-bottom: var(--space-4); border:1.5px solid var(--color-warning, #f59e0b);">
+        <div class="card-header">
+          <div class="card-title">기존 데이터 마이그레이션</div>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap: var(--space-3);">
+          <div style="font-size:13px; color:var(--color-text-muted);">이전 버전(로컬 저장)의 데이터가 감지되었습니다. 아래 버튼을 눌러 클라우드로 가져오세요.</div>
+          <button class="btn btn-primary" id="migrate-legacy-btn">기기 데이터 가져오기</button>
+        </div>
+      </div>
+    ` : '';
 
     return `
       <div class="page-header">
@@ -20,6 +47,25 @@ export class SettingsPage {
         </div>
       </div>
       <div class="page-body">
+
+        <!-- User profile -->
+        <div class="card" style="margin-bottom: var(--space-4);">
+          <div class="card-header">
+            <div class="card-title">계정</div>
+          </div>
+          <div class="card-body">
+            <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4);">
+              ${avatarUrl}
+              <div style="flex:1; min-width:0;">
+                <div style="font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${user?.displayName || '이름 없음'}</div>
+                <div style="font-size:13px; color:var(--color-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${user?.email || ''}</div>
+              </div>
+            </div>
+            <button class="btn btn-secondary" id="logout-btn" style="width:100%;">로그아웃</button>
+          </div>
+        </div>
+
+        ${migrationSection}
 
         <!-- Contract alert thresholds -->
         <div class="card" style="margin-bottom: var(--space-4);">
@@ -98,6 +144,8 @@ export class SettingsPage {
   }
 
   async mount() {
+    document.getElementById('logout-btn')?.addEventListener('click', () => this._logout());
+
     document.getElementById('save-alert-settings-btn')?.addEventListener('click', () => this._saveAlertSettings());
 
     document.getElementById('export-backup-btn')?.addEventListener('click', () => this._exportBackup());
@@ -107,6 +155,48 @@ export class SettingsPage {
       const file = e.target.files[0];
       if (file) this._importBackup(file);
     });
+
+    if (this._hasLegacy) {
+      document.getElementById('migrate-legacy-btn')?.addEventListener('click', () => this._migrateLegacy());
+    }
+  }
+
+  async _logout() {
+    const ok = await Modal.confirm({
+      title: '로그아웃',
+      message: '로그아웃하시겠습니까?',
+      confirmText: '로그아웃',
+    });
+    if (!ok) return;
+    try {
+      await AuthService.signOut();
+    } catch (e) {
+      Toast.error('로그아웃 실패: ' + e.message);
+    }
+  }
+
+  async _migrateLegacy() {
+    const ok = await Modal.confirm({
+      title: '기기 데이터 가져오기',
+      message: '기기에 저장된 기존 데이터를 클라우드로 가져옵니다.\n현재 클라우드 데이터는 모두 교체됩니다.\n계속하시겠습니까?',
+      danger: true,
+      confirmText: '가져오기',
+    });
+    if (!ok) return;
+
+    const btn = document.getElementById('migrate-legacy-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '가져오는 중...'; }
+
+    try {
+      const data = await readLegacyIndexedDB();
+      if (!data) throw new Error('기존 데이터를 읽을 수 없습니다.');
+      await importAllData(data);
+      Toast.success('기기 데이터를 성공적으로 가져왔습니다.');
+      setTimeout(() => { window.location.hash = '#/'; window.location.reload(); }, 1000);
+    } catch (e) {
+      Toast.error('마이그레이션 실패: ' + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = '기기 데이터 가져오기'; }
+    }
   }
 
   async _saveAlertSettings() {
