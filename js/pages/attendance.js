@@ -36,7 +36,15 @@ export class AttendancePage {
     this.students = await StudentsDB.getByGroup(this.groupId);
     this.attendanceMap = await AttendanceDB.getByGroupDate(this.groupId, this.date);
 
+    // Split students into scheduled / unscheduled for this date's day-of-week
+    const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+    const todayDay  = DAY_NAMES[new Date(this.date + 'T00:00:00').getDay()];
+    // Students with no attendanceDays set → treat as always scheduled
+    this._scheduled   = this.students.filter(s => !s.attendanceDays?.length || s.attendanceDays.includes(todayDay));
+    this._unscheduled = this.students.filter(s =>  s.attendanceDays?.length && !s.attendanceDays.includes(todayDay));
+
     const summary = this._calcSummary();
+    const hasGroups = this._scheduled.length > 0 && this._unscheduled.length > 0;
 
     return `
       <div class="page-header">
@@ -52,7 +60,7 @@ export class AttendancePage {
           <div class="date-nav">
             <button class="date-nav-btn" id="prev-date" aria-label="이전날">←</button>
             <button class="date-nav-label" id="date-picker-trigger" title="날짜 선택">${formatDateKo(this.date, { short: true })}</button>
-            <button class="date-nav-btn" id="next-date" aria-label="다음날" ${isFuture(shiftDate(this.date, 1)) ? '' : ''}>→</button>
+            <button class="date-nav-btn" id="next-date" aria-label="다음날">→</button>
           </div>
         </div>
       </div>
@@ -66,27 +74,65 @@ export class AttendancePage {
           ${this._summaryCard('조퇴', summary.early, 'var(--color-early)')}
         </div>
 
-        <!-- Quick mark all -->
-        <div class="quick-mark-bar">
+        <!-- Quick mark bar -->
+        <div class="quick-mark-bar" style="margin-bottom: var(--space-3);">
           <span class="quick-mark-label">전체:</span>
           ${STATUS_LIST.map(s => `
             <button class="btn btn-sm btn-secondary quick-all-btn" data-status="${s}">
               모두 ${STATUS_LABELS[s]}
             </button>
           `).join('')}
-          <button class="btn btn-sm btn-ghost" id="clear-all-btn" style="margin-left:auto; color:var(--color-absent)">초기화</button>
+          <button class="btn btn-sm btn-ghost" id="clear-all-btn" style="margin-left:auto; color:var(--color-absent);">초기화</button>
         </div>
+        ${hasGroups ? `
+        <div class="quick-mark-bar">
+          <span class="quick-mark-label" style="color:var(--color-present);">예정만:</span>
+          ${STATUS_LIST.map(s => `
+            <button class="btn btn-sm btn-secondary quick-scheduled-btn" data-status="${s}">
+              예정 ${STATUS_LABELS[s]}
+            </button>
+          `).join('')}
+        </div>` : ''}
 
         <!-- Student cards -->
-        <div id="student-attendance-list" style="display:flex; flex-direction:column; gap: var(--space-2);">
+        <div id="student-attendance-list" style="display:flex; flex-direction:column; gap: var(--space-2); margin-top: var(--space-3);">
           ${this.students.length === 0
             ? `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">학생이 없습니다</div><div class="empty-state-desc"><a href="#/groups/${this.groupId}">학생 추가하기</a></div></div>`
-            : this.students.map(s => this._studentCard(s)).join('')
+            : this._renderGroupedList()
           }
         </div>
 
         <!-- Hidden flatpickr input -->
         <input type="text" id="date-picker-input" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;" readonly>
+      </div>
+    `;
+  }
+
+  _renderGroupedList() {
+    if (!this._unscheduled.length) {
+      // No unscheduled students → just render flat list (no section headers needed)
+      return this._scheduled.map(s => this._studentCard(s)).join('');
+    }
+
+    const scheduledHtml = this._scheduled.length > 0 ? `
+      ${this._sectionHeader('오늘 출석 예정', this._scheduled.length, 'var(--color-present)')}
+      ${this._scheduled.map(s => this._studentCard(s)).join('')}
+    ` : '';
+
+    const unscheduledHtml = `
+      ${this._sectionHeader('출석 비예정', this._unscheduled.length, 'var(--color-text-muted)')}
+      ${this._unscheduled.map(s => this._studentCard(s, true)).join('')}
+    `;
+
+    return scheduledHtml + unscheduledHtml;
+  }
+
+  _sectionHeader(label, count, color) {
+    return `
+      <div style="display:flex; align-items:center; gap:var(--space-2); padding: var(--space-2) 0; margin-top: var(--space-2);">
+        <span style="font-size:12px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:.04em;">${label}</span>
+        <span style="font-size:11px; font-weight:600; color:white; background:${color}; border-radius:10px; padding:1px 7px;">${count}명</span>
+        <div style="flex:1; height:1px; background:var(--color-border-light);"></div>
       </div>
     `;
   }
@@ -105,12 +151,12 @@ export class AttendancePage {
     return s;
   }
 
-  _studentCard(student) {
+  _studentCard(student, dimmed = false) {
     const rec = this.attendanceMap[student.id];
     const activeStatus = rec?.status || null;
 
     return `
-      <div class="student-card" data-student-id="${student.id}">
+      <div class="student-card" data-student-id="${student.id}" style="${dimmed ? 'opacity:0.55;' : ''}">
         <div class="student-number">${student.number}</div>
         <div class="student-name">${escapeHtml(student.name)}</div>
         <div class="attendance-buttons">
@@ -201,6 +247,11 @@ export class AttendancePage {
       btn.addEventListener('click', () => this._markAll(btn.dataset.status));
     });
 
+    // Quick mark scheduled only
+    document.querySelectorAll('.quick-scheduled-btn').forEach(btn => {
+      btn.addEventListener('click', () => this._markScheduled(btn.dataset.status));
+    });
+
     // Clear all
     document.getElementById('clear-all-btn')?.addEventListener('click', () => this._clearAll());
   }
@@ -270,6 +321,25 @@ export class AttendancePage {
       document.querySelectorAll('.att-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.status === status);
         btn.setAttribute('aria-pressed', btn.dataset.status === status ? 'true' : 'false');
+      });
+      this._updateSummary();
+    } catch (e) { Toast.error(MESSAGES.saveFailed); }
+  }
+
+  async _markScheduled(status) {
+    const targets = this._scheduled || [];
+    if (!targets.length) return;
+    const records = targets.map(s => ({ studentId: s.id, groupId: this.groupId, date: this.date, status }));
+    try {
+      await AttendanceDB.bulkSet(records);
+      records.forEach(r => { this.attendanceMap[r.studentId] = { ...r, id: `${r.studentId}_${r.date}`, markedAt: new Date().toISOString() }; });
+      targets.forEach(s => {
+        const card = document.querySelector(`[data-student-id="${s.id}"].student-card`);
+        if (!card) return;
+        card.querySelectorAll('.att-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.status === status);
+          b.setAttribute('aria-pressed', b.dataset.status === status ? 'true' : 'false');
+        });
       });
       this._updateSummary();
     } catch (e) { Toast.error(MESSAGES.saveFailed); }
