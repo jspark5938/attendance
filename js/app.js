@@ -110,9 +110,6 @@ function _checkBackupReminder() {
 }
 
 async function init() {
-  // Handle redirect result first (for Capacitor Google Sign-In)
-  await AuthService.handleRedirectResult();
-
   // Listen for auth state changes
   AuthService.onAuthStateChanged(async (user) => {
     if (user) {
