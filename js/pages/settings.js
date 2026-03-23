@@ -3,12 +3,16 @@
  * Route: #/settings
  */
 
-import { exportAllData, importAllData } from '../db/database.js';
+import { exportAllData, importAllData, getByKey, put } from '../db/database.js';
 import Toast from '../components/toast.js';
 import Modal from '../components/modal.js';
 import { MESSAGES } from '../utils/i18n.js';
 export class SettingsPage {
   async render() {
+    const alertSettings = await getByKey('settings', 'contract_alert') ?? {};
+    const periodDays     = alertSettings.periodDays     ?? 7;
+    const countRemaining = alertSettings.countRemaining ?? 3;
+
     return `
       <div class="page-header">
         <div class="page-header-left">
@@ -16,6 +20,43 @@ export class SettingsPage {
         </div>
       </div>
       <div class="page-body">
+
+        <!-- Contract alert thresholds -->
+        <div class="card" style="margin-bottom: var(--space-4);">
+          <div class="card-header">
+            <div class="card-title">계약 종료 예정 알림 기준</div>
+          </div>
+          <div class="card-body" style="display:flex; flex-direction:column; gap: var(--space-4);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);">
+              <div>
+                <div style="font-weight:600; margin-bottom:2px;">기간제</div>
+                <div style="font-size:13px; color:var(--color-text-muted);">종료일 N일 이내인 학생을 홈에 표시</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                <input type="number" id="alert-period-days" class="form-input"
+                  value="${periodDays}" min="1" max="365"
+                  style="width:70px; text-align:center; padding:6px 8px;">
+                <span style="font-size:14px; color:var(--color-text-muted);">일 이내</span>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);">
+              <div>
+                <div style="font-weight:600; margin-bottom:2px;">횟수제</div>
+                <div style="font-size:13px; color:var(--color-text-muted);">잔여 횟수가 N회 이하인 학생을 홈에 표시</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                <input type="number" id="alert-count-remaining" class="form-input"
+                  value="${countRemaining}" min="0" max="999"
+                  style="width:70px; text-align:center; padding:6px 8px;">
+                <span style="font-size:14px; color:var(--color-text-muted);">회 이하</span>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-primary" id="save-alert-settings-btn">저장</button>
+            </div>
+          </div>
+        </div>
 
         <!-- Data backup -->
         <div class="card" style="margin-bottom: var(--space-4);">
@@ -57,6 +98,8 @@ export class SettingsPage {
   }
 
   async mount() {
+    document.getElementById('save-alert-settings-btn')?.addEventListener('click', () => this._saveAlertSettings());
+
     document.getElementById('export-backup-btn')?.addEventListener('click', () => this._exportBackup());
 
     const importInput = document.getElementById('import-backup-input');
@@ -64,6 +107,15 @@ export class SettingsPage {
       const file = e.target.files[0];
       if (file) this._importBackup(file);
     });
+  }
+
+  async _saveAlertSettings() {
+    const periodDays     = parseInt(document.getElementById('alert-period-days')?.value, 10);
+    const countRemaining = parseInt(document.getElementById('alert-count-remaining')?.value, 10);
+    if (isNaN(periodDays) || periodDays < 1)    { Toast.error('기간제 기준은 1일 이상이어야 합니다.'); return; }
+    if (isNaN(countRemaining) || countRemaining < 0) { Toast.error('횟수제 기준은 0 이상이어야 합니다.'); return; }
+    await put('settings', { key: 'contract_alert', periodDays, countRemaining });
+    Toast.success('알림 기준이 저장되었습니다.');
   }
 
   async _exportBackup() {
