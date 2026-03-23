@@ -63,7 +63,7 @@ export const AdsService = {
       await AdMob.initialize({ testingDevices: [] });
 
       await AdMob.showBanner({
-        adId: 'ca-app-pub-1007656354860622/9414369755',
+        adId: 'ca-app-pub-1007656354860622/8325774890',
         adSize: BannerAdSize.ADAPTIVE_BANNER,
         position: BannerAdPosition.BOTTOM_CENTER,
         margin: 0,
