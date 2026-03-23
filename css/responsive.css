@@ -12,10 +12,15 @@
   .bottom-nav { display: flex !important; }
   .mobile-header { display: flex !important; }
 
-  /* Main content has no left margin, has bottom padding for tab bar */
+  /* Main content: no left margin */
   .main-content {
     margin-left: 0;
-    padding-bottom: calc(var(--bottom-nav-height) + var(--space-4));
+    padding-bottom: var(--space-4);
+  }
+
+  /* Push page content below fixed top nav bar */
+  #app-content {
+    padding-top: 44px;
   }
 
   /* Full-width page header */
@@ -29,9 +34,9 @@
     padding: var(--space-4);
   }
 
-  /* Toast above bottom nav */
+  /* Toast at bottom of screen */
   #toast-container {
-    bottom: calc(var(--bottom-nav-height) + var(--space-3));
+    bottom: var(--space-6);
   }
 
   /* Grids collapse to 1 or 2 columns */
@@ -76,10 +81,6 @@
     height: 40px;
   }
 
-  /* Bottom nav label: slightly bigger */
-  .bottom-nav-label {
-    font-size: 11px;
-  }
 
   /* Stat cards: 2 columns */
   .stat-cards-grid {
