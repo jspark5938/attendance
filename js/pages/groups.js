@@ -63,11 +63,8 @@ export class GroupsPage {
 
   _groupCard(g) {
     return `
-      <div class="group-card" data-group-id="${g.id}" style="position:relative;">
-        <!-- 카드 전체 클릭 영역 (버튼 위에 겹치지 않도록 z-index 조절) -->
-        <a href="#/groups/${g.id}" class="group-card-link" aria-label="${escapeHtml(g.name)} 상세보기"
-          style="position:absolute;inset:0;z-index:0;border-radius:inherit;"></a>
-        <div class="group-card-header" style="position:relative;z-index:1;">
+      <div class="group-card" data-group-id="${g.id}" data-group-nav="#/groups/${g.id}" style="cursor:pointer;">
+        <div class="group-card-header">
           <span class="group-card-color-dot" style="background:${escapeHtml(g.color)}"></span>
           <span class="group-card-name">${escapeHtml(g.name)}</span>
           <div style="display:flex; gap:4px;">
@@ -75,8 +72,8 @@ export class GroupsPage {
             <button class="btn btn-ghost btn-icon-sm delete-group-btn" data-id="${g.id}" title="삭제" aria-label="삭제" style="color: var(--color-absent);">✕</button>
           </div>
         </div>
-        ${g.description ? `<div class="group-card-desc" style="position:relative;z-index:1;">${escapeHtml(g.description)}</div>` : ''}
-        <div class="group-card-meta" style="position:relative;z-index:1;">
+        ${g.description ? `<div class="group-card-desc">${escapeHtml(g.description)}</div>` : ''}
+        <div class="group-card-meta">
           <span>학생 수 로딩중...</span>
         </div>
       </div>
@@ -93,7 +90,14 @@ export class GroupsPage {
     this._on('#add-group-card', 'click', () => this._openAddModal());
     this._on('#add-group-card', 'keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') this._openAddModal(); });
 
-    // Edit / Delete buttons (카드 이동은 <a> 태그로 처리됨)
+    // Group card navigation
+    document.querySelectorAll('.group-card[data-group-nav]').forEach(card => {
+      card.addEventListener('click', () => {
+        window.location.hash = card.dataset.groupNav;
+      });
+    });
+
+    // Edit / Delete buttons
     document.querySelectorAll('.edit-group-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();

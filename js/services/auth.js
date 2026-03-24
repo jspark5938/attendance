@@ -2,6 +2,7 @@ import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithCr
 import { auth } from './firebase.js';
 
 const provider = new GoogleAuthProvider();
+const GUEST_KEY = 'attendance_guest_mode';
 
 function isCapacitor() {
   return typeof window.Capacitor !== 'undefined' && window.Capacitor.isNativePlatform?.();
@@ -11,6 +12,10 @@ export const AuthService = {
   currentUser() { return auth.currentUser; },
 
   onAuthStateChanged(cb) { return onAuthStateChanged(auth, cb); },
+
+  isGuestMode() { return localStorage.getItem(GUEST_KEY) === 'true'; },
+  enterGuestMode() { localStorage.setItem(GUEST_KEY, 'true'); },
+  exitGuestMode() { localStorage.removeItem(GUEST_KEY); },
 
   async handleRedirectResult() {
     if (isCapacitor()) return null;
@@ -33,6 +38,7 @@ export const AuthService = {
       const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
       await FirebaseAuthentication.signOut();
     }
+    this.exitGuestMode();
     await signOut(auth);
   },
 };

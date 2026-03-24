@@ -11,6 +11,7 @@ import { BottomNav } from './components/bottom-nav.js';
 import { PremiumService } from './services/premium.js';
 import { AdsService } from './services/ads.js';
 import { AuthService } from './services/auth.js';
+import { localHasData, migrateLocalToCloud } from './db/database.js';
 
 // Pages
 import { LoginPage }       from './pages/login.js';
@@ -109,6 +110,22 @@ function _checkBackupReminder() {
   }
 }
 
+async function _offerMigration() {
+  if (!localHasData()) return;
+  const ok = await Modal.confirm({
+    title: '로컬 데이터 백업',
+    message: '로그인 없이 저장된 데이터가 있습니다.\n지금 클라우드에 백업하시겠습니까?\n(취소하면 기존 데이터는 로컬에 남습니다)',
+    confirmText: '백업하기',
+  });
+  if (!ok) return;
+  try {
+    await migrateLocalToCloud();
+    Toast.success('데이터를 클라우드에 백업했습니다.');
+  } catch (e) {
+    Toast.error('백업 실패: ' + e.message);
+  }
+}
+
 async function init() {
   // Handle Google redirect result (web only)
   await AuthService.handleRedirectResult().catch(() => {});
@@ -116,18 +133,20 @@ async function init() {
   // Listen for auth state changes
   AuthService.onAuthStateChanged(async (user) => {
     if (user) {
-      // User is signed in — run full app init
+      AuthService.exitGuestMode();
+      await _offerMigration();
+      await _initApp();
+    } else if (AuthService.isGuestMode()) {
       await _initApp();
     } else {
-      // User is not signed in — show login page
       _appInitialized = false;
-      if (_router) {
-        _router.stop?.();
-        _router = null;
-      }
+      if (_router) { _router.stop?.(); _router = null; }
       await _showLoginPage();
     }
   });
+
+  // Guest mode entry from login page
+  window.addEventListener('guest-mode-enter', () => _initApp());
 }
 
 // Start when DOM is ready

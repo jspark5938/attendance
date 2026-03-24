@@ -3,7 +3,7 @@
  * Route: #/settings
  */
 
-import { exportAllData, importAllData, getByKey, put } from '../db/database.js';
+import { exportAllData, importAllData, getByKey, put, localHasData, migrateLocalToCloud } from '../db/database.js';
 import Toast from '../components/toast.js';
 import Modal from '../components/modal.js';
 import { MESSAGES } from '../utils/i18n.js';
@@ -21,6 +21,7 @@ export class SettingsPage {
     const countRemaining = alertSettings.countRemaining ?? 3;
 
     const user = AuthService.currentUser();
+    const isGuest = !user;
     this._hasLegacy = await hasLegacyData();
 
     const avatarUrl = user?.photoURL
@@ -48,20 +49,32 @@ export class SettingsPage {
       </div>
       <div class="page-body">
 
-        <!-- User profile -->
+        <!-- User profile / Guest mode -->
         <div class="card" style="margin-bottom: var(--space-4);">
           <div class="card-header">
             <div class="card-title">계정</div>
           </div>
           <div class="card-body">
-            <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4);">
-              ${avatarUrl}
-              <div style="flex:1; min-width:0;">
-                <div style="font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${user?.displayName || '이름 없음'}</div>
-                <div style="font-size:13px; color:var(--color-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${user?.email || ''}</div>
+            ${isGuest ? `
+              <div style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4); padding:var(--space-3); background:var(--color-surface-2); border-radius:var(--radius-md);">
+                <div style="font-size:28px;">👤</div>
+                <div>
+                  <div style="font-weight:700; font-size:15px;">로컬 모드</div>
+                  <div style="font-size:13px; color:var(--color-text-muted);">데이터가 이 기기에만 저장됩니다</div>
+                </div>
               </div>
-            </div>
-            <button class="btn btn-secondary" id="logout-btn" style="width:100%;">로그아웃</button>
+              <div style="font-size:13px; color:var(--color-text-muted); margin-bottom:var(--space-3);">Google 로그인 시 현재 데이터를 클라우드에 백업하고 모든 기기에서 동기화할 수 있습니다.</div>
+              <button class="btn btn-primary" id="login-btn" style="width:100%;">Google로 로그인</button>
+            ` : `
+              <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4);">
+                ${avatarUrl}
+                <div style="flex:1; min-width:0;">
+                  <div style="font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${user?.displayName || '이름 없음'}</div>
+                  <div style="font-size:13px; color:var(--color-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${user?.email || ''}</div>
+                </div>
+              </div>
+              <button class="btn btn-secondary" id="logout-btn" style="width:100%;">로그아웃</button>
+            `}
           </div>
         </div>
 
@@ -145,6 +158,7 @@ export class SettingsPage {
 
   async mount() {
     document.getElementById('logout-btn')?.addEventListener('click', () => this._logout());
+    document.getElementById('login-btn')?.addEventListener('click', () => this._loginFromGuest());
 
     document.getElementById('save-alert-settings-btn')?.addEventListener('click', () => this._saveAlertSettings());
 
@@ -158,6 +172,14 @@ export class SettingsPage {
 
     if (this._hasLegacy) {
       document.getElementById('migrate-legacy-btn')?.addEventListener('click', () => this._migrateLegacy());
+    }
+  }
+
+  async _loginFromGuest() {
+    try {
+      await AuthService.signIn();
+    } catch (e) {
+      Toast.error('로그인에 실패했습니다: ' + (e.message || ''));
     }
   }
 
