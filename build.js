@@ -3,6 +3,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const SRC = __dirname;
 const DEST = path.join(__dirname, 'www');
@@ -36,4 +37,46 @@ for (const name of INCLUDE) {
   }
 }
 
+// Compute content hash of all built files (excluding sw.js itself)
+function computeHash(dir) {
+  const hash = crypto.createHash('md5');
+  function walk(d) {
+    for (const entry of fs.readdirSync(d).sort()) {
+      const fullPath = path.join(d, entry);
+      if (entry === 'sw.js') continue;
+      const stat = fs.statSync(fullPath);
+      if (stat.isDirectory()) walk(fullPath);
+      else hash.update(fs.readFileSync(fullPath));
+    }
+  }
+  walk(dir);
+  return hash.digest('hex').slice(0, 8);
+}
+
+const contentHash = computeHash(DEST);
+const cacheName = `attendance-app-${contentHash}`;
+
+// Inject cache version into www/sw.js
+const swPath = path.join(DEST, 'sw.js');
+let swContent = fs.readFileSync(swPath, 'utf8');
+swContent = swContent.replace(
+  /const CACHE_NAME = ['"]attendance-app-[^'"]+['"]/,
+  `const CACHE_NAME = '${cacheName}'`
+);
+fs.writeFileSync(swPath, swContent);
+
+// Inject ?v=<hash> into local CSS/JS references in www/index.html
+const htmlPath = path.join(DEST, 'index.html');
+let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+// Match href/src pointing to local files (starting with css/, js/, assets/, or /)
+htmlContent = htmlContent.replace(
+  /(href|src)="((?:css|js|assets|sw)[^"]*?)"/g,
+  (_, attr, url) => {
+    const base = url.split('?')[0];
+    return `${attr}="${base}?v=${contentHash}"`;
+  }
+);
+fs.writeFileSync(htmlPath, htmlContent);
+
+console.log(`Cache version: ${cacheName}`);
 console.log('Build complete → www/');
