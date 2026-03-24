@@ -8,6 +8,10 @@
   "plugins": {
     "AdMob": {
       "appId": "ca-app-pub-1007656354860622~5253856593"
+    },
+    "FirebaseAuthentication": {
+      "skipNativeAuth": false,
+      "providers": ["google.com"]
     }
   },
   "android": {

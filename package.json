@@ -5,7 +5,8 @@
   "main": "sw.js",
   "scripts": {
     "build": "node build.js",
-    "sync": "npm run build && npx cap sync android"
+    "sync": "npm run build && npx cap sync android",
+    "postinstall": "node scripts/fix-proguard.js"
   },
   "repository": {
     "type": "git",
@@ -21,9 +22,14 @@
   "homepage": "https://github.com/jspark5938/attendance#readme",
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
+    "@capacitor-firebase/authentication": "^8.1.0",
     "@capacitor/android": "^8.2.0",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
     "firebase": "^12.11.0"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.1",
+    "sharp": "^0.34.5"
   }
 }

@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "276747378550-jdobgodihphul024q3gvs3u72jt0qs5l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jspark5938.attendance",
+            "certificate_hash": "93e57d1f42f6f32b0b92012dfcbc18c103667a14"
+          }
+        },
+        {
           "client_id": "276747378550-8269rrp12nejqigd6vsga0i965ojrufo.apps.googleusercontent.com",
           "client_type": 3
         }
