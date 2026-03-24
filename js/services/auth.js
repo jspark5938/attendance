@@ -24,7 +24,7 @@ export const AuthService = {
 
   async signIn() {
     if (isCapacitor()) {
-      const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+      const FirebaseAuthentication = window.Capacitor.Plugins.FirebaseAuthentication;
       const result = await FirebaseAuthentication.signInWithGoogle();
       const credential = GoogleAuthProvider.credential(result.credential?.idToken);
       await signInWithCredential(auth, credential);
@@ -35,7 +35,7 @@ export const AuthService = {
 
   async signOut() {
     if (isCapacitor()) {
-      const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+      const FirebaseAuthentication = window.Capacitor.Plugins.FirebaseAuthentication;
       await FirebaseAuthentication.signOut();
     }
     this.exitGuestMode();
