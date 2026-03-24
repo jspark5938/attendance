@@ -35,6 +35,12 @@
 </head>
 <body>
 
+  <!-- ======== AUTH LOADING OVERLAY ======== -->
+  <div id="app-loading" style="position:fixed;inset:0;z-index:9999;background:var(--color-bg,#fff);display:flex;align-items:center;justify-content:center;">
+    <div style="width:36px;height:36px;border:3px solid var(--color-border,#e5e7eb);border-top-color:var(--color-primary,#4F46E5);border-radius:50%;animation:spin .7s linear infinite;"></div>
+  </div>
+  <style>#app-loading{transition:opacity .15s} @keyframes spin{to{transform:rotate(360deg)}}</style>
+
   <!-- ======== APP SHELL ======== -->
   <div class="app-container">
 

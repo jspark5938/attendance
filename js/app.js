@@ -132,6 +132,7 @@ async function init() {
 
   // Listen for auth state changes
   AuthService.onAuthStateChanged(async (user) => {
+    document.getElementById('app-loading')?.remove();
     if (user) {
       AuthService.exitGuestMode();
       await _offerMigration();
