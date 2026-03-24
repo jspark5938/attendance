@@ -110,6 +110,9 @@ function _checkBackupReminder() {
 }
 
 async function init() {
+  // Handle Google redirect result (web only)
+  await AuthService.handleRedirectResult().catch(() => {});
+
   // Listen for auth state changes
   AuthService.onAuthStateChanged(async (user) => {
     if (user) {

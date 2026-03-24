@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithPopup, signInWithCredential, onAuthStateChanged, signOut } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithCredential, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase.js';
 
 const provider = new GoogleAuthProvider();
@@ -12,6 +12,11 @@ export const AuthService = {
 
   onAuthStateChanged(cb) { return onAuthStateChanged(auth, cb); },
 
+  async handleRedirectResult() {
+    if (isCapacitor()) return null;
+    return await getRedirectResult(auth);
+  },
+
   async signIn() {
     if (isCapacitor()) {
       const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
@@ -19,7 +24,7 @@ export const AuthService = {
       const credential = GoogleAuthProvider.credential(result.credential?.idToken);
       await signInWithCredential(auth, credential);
     } else {
-      await signInWithPopup(auth, provider);
+      await signInWithRedirect(auth, provider);
     }
   },
 
