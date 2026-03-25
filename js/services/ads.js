@@ -83,15 +83,15 @@ export const AdsService = {
 
       const safeBottom = this._getSafeAreaBottom();
 
-      // 배너 로드 완료 시 (배너 높이 + 시스템 바 높이)만큼 하단 패딩 추가
+      // 배너 로드 완료 시 Java에 높이 전달 → WebView 하단 패딩 재계산
       AdMob.addListener('bannerAdLoaded', (info) => {
         const height = info?.adSize?.height ?? 60;
-        document.body.style.paddingBottom = `${height + safeBottom}px`;
+        window.AndroidBridge?.setBannerHeight(height);
       });
 
-      // 배너 닫힘/실패 시 패딩 제거
+      // 배너 실패 시 높이 0으로 초기화
       AdMob.addListener('bannerAdFailedToLoad', () => {
-        document.body.style.paddingBottom = '';
+        window.AndroidBridge?.setBannerHeight(0);
       });
 
       await AdMob.showBanner({
