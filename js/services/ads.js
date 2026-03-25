@@ -60,6 +60,16 @@ export const AdsService = {
     }
   },
 
+  /** 시스템 바(홈 버튼 영역) 높이를 px로 반환 */
+  _getSafeAreaBottom() {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden;';
+    document.body.appendChild(el);
+    const h = el.offsetHeight;
+    document.body.removeChild(el);
+    return h;
+  },
+
   /** AdMob: initialize banner via Capacitor plugin */
   async _initAdMob() {
     try {
@@ -71,10 +81,12 @@ export const AdsService = {
         initializeForTesting: USE_TEST_ADS,
       });
 
-      // 배너 로드 완료 시 높이만큼 하단 패딩 추가
+      const safeBottom = this._getSafeAreaBottom();
+
+      // 배너 로드 완료 시 (배너 높이 + 시스템 바 높이)만큼 하단 패딩 추가
       AdMob.addListener('bannerAdLoaded', (info) => {
         const height = info?.adSize?.height ?? 60;
-        document.body.style.paddingBottom = `${height}px`;
+        document.body.style.paddingBottom = `${height + safeBottom}px`;
       });
 
       // 배너 닫힘/실패 시 패딩 제거
@@ -86,7 +98,7 @@ export const AdsService = {
         adId: USE_TEST_ADS ? TEST_BANNER_ID : REAL_BANNER_ID,
         adSize: 'ADAPTIVE_BANNER',
         position: 'BOTTOM_CENTER',
-        margin: 0,
+        margin: safeBottom,  // 시스템 바 위로 배너 띄우기
         npa: false,
       });
     } catch (e) {
