@@ -23,7 +23,6 @@ import { CalendarPage }     from './pages/calendar.js';
 import { StatisticsPage }   from './pages/statistics.js';
 import { SettingsPage }     from './pages/settings.js';
 import { PremiumPage }      from './pages/premium.js';
-import { ExportPage }       from './pages/export.js';
 import { GroupPickerPage }   from './pages/group-picker.js';
 import { CalendarAllPage }  from './pages/calendar-all.js';
 
@@ -75,7 +74,6 @@ async function _initApp() {
   _router.register('/groups/:id/attend', (p, q) => new AttendancePage(p, q));
   _router.register('/groups/:id/calendar', (p) => new CalendarPage(p));
   _router.register('/groups/:id/stats', (p) => new StatisticsPage(p));
-  _router.register('/groups/:id/export', (p) => new ExportPage(p));
   _router.register('/calendar', () => new CalendarAllPage());
   _router.register('/stats',    () => new GroupPickerPage({ mode: 'stats' }));
   _router.register('/settings', () => new SettingsPage());
@@ -85,15 +83,31 @@ async function _initApp() {
   _showAppShell(true);
   _router.start();
 
-  // 6. Register service worker (PWA)
+  // 6. Android 뒤로가기 버튼 처리
+  _initBackButton();
+
+  // 7. Register service worker (PWA)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {
       // SW not supported in this context (file:// etc.)
     });
   }
 
-  // 7. Backup reminder (every 30 days)
+  // 8. Backup reminder (every 30 days)
   _checkBackupReminder();
+}
+
+function _initBackButton() {
+  const cap = window.Capacitor;
+  if (!cap?.isNativePlatform?.()) return;
+
+  cap.Plugins.App?.addListener('backButton', ({ canGoBack }) => {
+    if (canGoBack) {
+      window.history.back();
+    } else {
+      cap.Plugins.App.exitApp();
+    }
+  });
 }
 
 function _checkBackupReminder() {
@@ -136,7 +150,12 @@ async function init() {
     if (user) {
       AuthService.exitGuestMode();
       await _offerMigration();
-      await _initApp();
+      if (_appInitialized && _router) {
+        // 게스트 모드에서 로그인한 경우 — 앱 재초기화 없이 현재 페이지만 갱신
+        await _router.refresh();
+      } else {
+        await _initApp();
+      }
     } else if (AuthService.isGuestMode()) {
       await _initApp();
     } else {

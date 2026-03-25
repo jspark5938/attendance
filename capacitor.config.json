@@ -11,7 +11,8 @@
     },
     "FirebaseAuthentication": {
       "skipNativeAuth": false,
-      "providers": ["google.com"]
+      "providers": ["google.com"],
+      "webClientId": "276747378550-8269rrp12nejqigd6vsga0i965ojrufo.apps.googleusercontent.com"
     }
   },
   "android": {

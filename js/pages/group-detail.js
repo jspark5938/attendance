@@ -76,7 +76,6 @@ export class GroupDetailPage {
           <a href="#/groups/${this.groupId}/attend" class="btn btn-outline btn-sm">📋 출석 체크</a>
           <a href="#/groups/${this.groupId}/calendar" class="btn btn-outline btn-sm">📅 달력</a>
           <a href="#/groups/${this.groupId}/stats" class="btn btn-outline btn-sm">📊 통계</a>
-          <a href="#/groups/${this.groupId}/export" class="btn btn-outline btn-sm">⬇ 내보내기</a>
         </div>
 
         <!-- 구성원 목록 -->
@@ -85,8 +84,9 @@ export class GroupDetailPage {
             <div class="card-title">구성원 목록</div>
             <div style="display:flex; align-items:center; gap:8px;">
               <input type="text" id="student-search" class="form-input"
-                placeholder="이름 검색..." style="width:160px; padding: 6px 12px; font-size:13px;"
+                placeholder="이름 검색..." style="width:120px; padding: 6px 12px; font-size:13px;"
                 value="${escapeHtml(this._searchQuery)}">
+              <button class="btn btn-primary btn-sm" id="add-student-card-btn">+ 추가</button>
             </div>
           </div>
 
@@ -210,6 +210,7 @@ export class GroupDetailPage {
 
     // 구성원 추가
     document.getElementById('add-student-btn')?.addEventListener('click', () => this._openAddStudent());
+    document.getElementById('add-student-card-btn')?.addEventListener('click', () => this._openAddStudent());
     document.getElementById('add-student-empty-btn')?.addEventListener('click', () => this._openAddStudent());
 
     // 검색

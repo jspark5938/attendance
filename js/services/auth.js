@@ -25,7 +25,7 @@ export const AuthService = {
   async signIn() {
     if (isCapacitor()) {
       const FirebaseAuthentication = window.Capacitor.Plugins.FirebaseAuthentication;
-      const result = await FirebaseAuthentication.signInWithGoogle();
+      const result = await FirebaseAuthentication.signInWithGoogle({ useCredentialManager: false });
       const credential = GoogleAuthProvider.credential(result.credential?.idToken);
       await signInWithCredential(auth, credential);
     } else {

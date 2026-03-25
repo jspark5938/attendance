@@ -30,15 +30,13 @@ export class CalendarAllPage {
         <div class="page-header-left">
           <h1 class="page-title">📅 달력</h1>
         </div>
-        <div class="page-header-actions">
-          <div class="date-nav">
-            <button class="date-nav-btn" id="prev-month">←</button>
-            <span class="date-nav-label" id="month-label">${formatYearMonthKo(this.yearMonth)}</span>
-            <button class="date-nav-btn" id="next-month">→</button>
-          </div>
-        </div>
       </div>
       <div class="page-body">
+        <div class="date-nav" style="justify-content:center; margin-bottom: var(--space-3);">
+          <button class="date-nav-btn" id="prev-month">←</button>
+          <span class="date-nav-label" id="month-label">${formatYearMonthKo(this.yearMonth)}</span>
+          <button class="date-nav-btn" id="next-month">→</button>
+        </div>
         <div id="cal-filter" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:var(--space-4);"></div>
         <div class="card">
           <div class="card-body" id="calendar-container">

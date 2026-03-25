@@ -53,6 +53,13 @@ export class Router {
   }
 
   /**
+   * Re-render the current page (useful after auth state change)
+   */
+  refresh() {
+    return this._resolve();
+  }
+
+  /**
    * Set page header content (title, subtitle, actions)
    */
   setHeader({ title = '', subtitle = '', actions = '' } = {}) {

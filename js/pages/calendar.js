@@ -39,15 +39,13 @@ export class CalendarPage {
           <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="뒤로" style="font-size:20px;">←</a>
           <h1 class="page-title">${escapeHtml(this.group.name)} — 달력</h1>
         </div>
-        <div class="page-header-actions">
-          <div class="date-nav" id="month-nav">
-            <button class="date-nav-btn" id="prev-month">←</button>
-            <span class="date-nav-label" id="month-label">${formatYearMonthKo(this.yearMonth)}</span>
-            <button class="date-nav-btn" id="next-month">→</button>
-          </div>
-        </div>
       </div>
       <div class="page-body">
+        <div class="date-nav" id="month-nav" style="justify-content:center; margin-bottom: var(--space-3);">
+          <button class="date-nav-btn" id="prev-month">←</button>
+          <span class="date-nav-label" id="month-label">${formatYearMonthKo(this.yearMonth)}</span>
+          <button class="date-nav-btn" id="next-month">→</button>
+        </div>
         <div class="card">
           <div class="card-body" id="calendar-container">
             <div class="loading-state"><div class="spinner"></div><span>달력을 불러오는 중...</span></div>
@@ -278,7 +276,7 @@ export class CalendarPage {
             <button id="toggle-closed-btn" class="btn btn-sm" style="${isClosed ? 'color:var(--color-absent);border:1px solid var(--color-absent);' : 'color:var(--color-text-muted);border:1px solid var(--color-border);'} background:transparent; border-radius:var(--radius-full); font-size:12px; padding:2px 10px;">
               ${isClosed ? '휴무 해제' : '휴무 설정'}
             </button>
-            ${!isClosed ? `<a href="#/groups/${this.groupId}/attend?date=${dateStr}" class="btn btn-primary btn-sm">${isFuture ? '출석 체크' : '수정'}</a>` : ''}
+            ${!isClosed ? `<a href="#/groups/${this.groupId}/attend?date=${dateStr}" class="btn btn-primary btn-sm">출석 체크</a>` : ''}
           </div>
         </div>
         <div>
