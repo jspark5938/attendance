@@ -81,17 +81,18 @@ export const AdsService = {
         initializeForTesting: USE_TEST_ADS,
       });
 
-      const safeBottom = this._getSafeAreaBottom();
+      // Java에서 정확한 nav bar 높이 취득 (CSS env() 보다 타이밍에 안전)
+      const safeBottom = window.AndroidBridge?.getNavBarHeight() || this._getSafeAreaBottom();
 
-      // 배너 로드 완료 시 Java에 높이 전달 → WebView 하단 패딩 재계산
+      // 배너 로드 완료 시 (배너 높이 + nav bar 높이)만큼 body 하단 패딩 추가
       AdMob.addListener('bannerAdLoaded', (info) => {
         const height = info?.adSize?.height ?? 60;
-        window.AndroidBridge?.setBannerHeight(height);
+        document.body.style.paddingBottom = `${height + safeBottom}px`;
       });
 
-      // 배너 실패 시 높이 0으로 초기화
+      // 배너 실패 시 nav bar 높이만큼만 패딩 유지
       AdMob.addListener('bannerAdFailedToLoad', () => {
-        window.AndroidBridge?.setBannerHeight(0);
+        document.body.style.paddingBottom = safeBottom > 0 ? `${safeBottom}px` : '';
       });
 
       await AdMob.showBanner({
