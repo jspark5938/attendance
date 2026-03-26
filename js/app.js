@@ -101,11 +101,30 @@ function _initBackButton() {
   const cap = window.Capacitor;
   if (!cap?.isNativePlatform?.()) return;
 
-  cap.Plugins.App?.addListener('backButton', ({ canGoBack }) => {
-    if (canGoBack) {
-      window.history.back();
+  // 홈에서 뒤로가기 2회 감지용 타임스탬프
+  let _lastBackPress = 0;
+
+  // 최상위 탭 화면 (뒤로가기 → 홈 이동)
+  const TOP_LEVEL = new Set(['/groups', '/calendar', '/stats', '/settings', '/premium']);
+
+  cap.Plugins.App?.addListener('backButton', () => {
+    const path = (window.location.hash || '#/').slice(1).split('?')[0] || '/';
+
+    if (path === '/') {
+      // 홈: 2초 안에 한 번 더 누르면 종료
+      const now = Date.now();
+      if (now - _lastBackPress < 2000) {
+        cap.Plugins.App.exitApp();
+      } else {
+        _lastBackPress = now;
+        Toast.show('한 번 더 누르면 종료됩니다.', 'info', 2000);
+      }
+    } else if (TOP_LEVEL.has(path)) {
+      // 최상위 탭: 홈으로 이동
+      _router.navigate('/');
     } else {
-      cap.Plugins.App.exitApp();
+      // 하위 화면: 이전 화면으로
+      window.history.back();
     }
   });
 }
