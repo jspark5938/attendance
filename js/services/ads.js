@@ -84,15 +84,20 @@ export const AdsService = {
       // Java에서 정확한 nav bar 높이 취득 (CSS env() 보다 타이밍에 안전)
       const safeBottom = window.AndroidBridge?.getNavBarHeight() || this._getSafeAreaBottom();
 
-      // 배너 로드 완료 시 (배너 높이 + nav bar 높이)만큼 body 하단 패딩 추가
+      // CSS 커스텀 프로퍼티로 오프셋 적용 (body 패딩 + 모달 max-height 등 일괄 반영)
+      const setOffset = (px) => {
+        document.documentElement.style.setProperty('--ad-bottom-offset', `${px}px`);
+      };
+
+      // 배너 로드 완료 시 (배너 높이 + nav bar 높이)만큼 오프셋 설정
       AdMob.addListener('bannerAdLoaded', (info) => {
         const height = info?.adSize?.height ?? 60;
-        document.body.style.paddingBottom = `${height + safeBottom}px`;
+        setOffset(height + safeBottom);
       });
 
-      // 배너 실패 시 nav bar 높이만큼만 패딩 유지
+      // 배너 실패 시 nav bar 높이만큼만 오프셋 유지
       AdMob.addListener('bannerAdFailedToLoad', () => {
-        document.body.style.paddingBottom = safeBottom > 0 ? `${safeBottom}px` : '';
+        setOffset(safeBottom);
       });
 
       await AdMob.showBanner({

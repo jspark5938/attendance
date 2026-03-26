@@ -24,6 +24,8 @@ body {
   min-height: 100vh;
   overflow-x: clip;
   width: 100%;
+  /* 하단 배너 광고 + 시스템 바 높이만큼 스크롤 여백 확보 */
+  padding-bottom: var(--ad-bottom-offset, 0px);
 }
 
 /* App container: sidebar + main */
@@ -408,7 +410,7 @@ body {
   box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 480px;
-  max-height: 90vh;
+  max-height: calc(90vh - var(--ad-bottom-offset, 0px));
   overflow-y: auto;
   transform: scale(0.95) translateY(8px);
   transition: transform var(--transition-base);

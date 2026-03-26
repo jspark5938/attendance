@@ -85,7 +85,7 @@
 
   /* Modal takes more vertical space */
   .modal {
-    max-height: 95vh;
+    max-height: calc(95vh - var(--ad-bottom-offset, 0px));
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     margin-top: auto;
   }
