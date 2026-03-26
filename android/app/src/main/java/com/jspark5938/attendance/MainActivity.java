@@ -26,6 +26,7 @@ public class MainActivity extends BridgeActivity {
 
         // JS에서 네비게이션 바 높이를 조회 (AdMob 배너 margin 계산용)
         WebView webView = getBridge().getWebView();
+        if (webView == null) return;
         webView.addJavascriptInterface(new Object() {
             @JavascriptInterface
             public int getNavBarHeight() {

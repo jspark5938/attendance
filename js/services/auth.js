@@ -24,7 +24,8 @@ export const AuthService = {
 
   async signIn() {
     if (isCapacitor()) {
-      const FirebaseAuthentication = window.Capacitor.Plugins.FirebaseAuthentication;
+      const FirebaseAuthentication = window.Capacitor?.Plugins?.FirebaseAuthentication;
+      if (!FirebaseAuthentication) throw new Error('FirebaseAuthentication 플러그인을 찾을 수 없습니다.');
       const result = await FirebaseAuthentication.signInWithGoogle({ useCredentialManager: false });
       const credential = GoogleAuthProvider.credential(result.credential?.idToken);
       await signInWithCredential(auth, credential);
@@ -35,8 +36,8 @@ export const AuthService = {
 
   async signOut() {
     if (isCapacitor()) {
-      const FirebaseAuthentication = window.Capacitor.Plugins.FirebaseAuthentication;
-      await FirebaseAuthentication.signOut();
+      const FirebaseAuthentication = window.Capacitor?.Plugins?.FirebaseAuthentication;
+      await FirebaseAuthentication?.signOut();
     }
     this.exitGuestMode();
     await signOut(auth);

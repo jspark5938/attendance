@@ -93,8 +93,6 @@ async function _initApp() {
     });
   }
 
-  // 8. Backup reminder (every 30 days)
-  _checkBackupReminder();
 }
 
 function _initBackButton() {
@@ -129,19 +127,6 @@ function _initBackButton() {
   });
 }
 
-function _checkBackupReminder() {
-  const key = 'last_backup_reminder';
-  const last = localStorage.getItem(key);
-  const now = Date.now();
-  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
-
-  if (!last || now - Number(last) > THIRTY_DAYS) {
-    setTimeout(() => {
-      Toast.info('데이터를 정기적으로 백업하는 것을 권장합니다. (설정 → 백업)', 6000);
-      localStorage.setItem(key, String(now));
-    }, 5000);
-  }
-}
 
 async function _offerMigration() {
   if (!localHasData()) return;

@@ -432,6 +432,7 @@ export class AttendancePage {
     Modal.open({ title: '결석 처리', body, hideConfirm: true, cancelText: '닫기' });
 
     const backdrop = document.getElementById('modal-backdrop');
+    if (!backdrop) return;
 
     backdrop.querySelectorAll('.absence-opt').forEach(btn => {
       btn.addEventListener('click', async () => {
