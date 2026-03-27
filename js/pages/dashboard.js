@@ -56,18 +56,22 @@ export class DashboardPage {
           <div class="stat-card">
             <div class="stat-card-label">전체 그룹</div>
             <div class="stat-card-value">${groups.length}</div>
+            <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:100%;"></div></div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label">전체 학생</div>
             <div class="stat-card-value">${totalStudents}</div>
+            <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:100%;"></div></div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label">오늘 출석</div>
             <div class="stat-card-value" style="color:var(--color-present)">${totalPresent}</div>
+            <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:${totalStudents > 0 ? Math.round(totalPresent/totalStudents*100) : 0}%;background:var(--color-present);"></div></div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label">오늘 결석</div>
             <div class="stat-card-value" style="color:var(--color-absent)">${totalAbsent}</div>
+            <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:${totalStudents > 0 ? Math.round(totalAbsent/totalStudents*100) : 0}%;background:var(--color-absent);"></div></div>
           </div>
         </div>
 

@@ -101,6 +101,8 @@ export const AttendanceDB = {
       date:      r.date,
       status:    r.status,
       note:      r.note || '',
+      absentType: r.status === 'absent' ? (r.absentType || 'normal') : null,
+      makeupDate: (r.status === 'absent' && r.absentType === 'makeup') ? (r.makeupDate || null) : null,
       markedAt:  new Date().toISOString(),
     }));
     return putBulk('attendance', prepared);
