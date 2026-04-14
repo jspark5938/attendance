@@ -13,7 +13,7 @@ const TEST_BANNER_ID = 'ca-app-pub-3940256099942544/6300978111';
 const REAL_BANNER_ID = 'ca-app-pub-1007656354860622/8325774890';
 
 // true = 테스트 광고, false = 실제 광고
-const USE_TEST_ADS = true;
+const USE_TEST_ADS = false;
 
 const isAndroid = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
 
