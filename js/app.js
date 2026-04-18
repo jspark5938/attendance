@@ -53,6 +53,7 @@ async function _initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
 
+  try {
   // 1. Load premium status
   const isPremium = await PremiumService.load();
 
@@ -93,6 +94,13 @@ async function _initApp() {
     });
   }
 
+  } catch (e) {
+    console.error('[App] _initApp failed:', e);
+    _appInitialized = false;
+    _router = null;
+    // 초기화 실패 시 로그인 화면 복구
+    await _showLoginPage();
+  }
 }
 
 function _initBackButton() {
@@ -164,13 +172,19 @@ async function init() {
       await _initApp();
     } else {
       _appInitialized = false;
-      if (_router) { _router.stop?.(); _router = null; }
+      if (_router) { _router.stop(); _router = null; }
       await _showLoginPage();
     }
   });
 
   // Guest mode entry from login page
-  window.addEventListener('guest-mode-enter', () => _initApp());
+  window.addEventListener('guest-mode-enter', () => {
+    _initApp().catch(e => {
+      console.error('[App] guest init failed:', e);
+      _appInitialized = false;
+      _showLoginPage();
+    });
+  });
 }
 
 // Start when DOM is ready

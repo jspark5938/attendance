@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult, signInWithCredential, onAuthStateChanged, signOut } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signInWithCredential, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase.js';
 
 const provider = new GoogleAuthProvider();
@@ -30,7 +30,15 @@ export const AuthService = {
       const credential = GoogleAuthProvider.credential(result.credential?.idToken);
       await signInWithCredential(auth, credential);
     } else {
-      await signInWithRedirect(auth, provider);
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (popupErr) {
+        // Popup blocked or unavailable — fall back to redirect
+        if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/popup-closed-by-user') {
+          throw popupErr;
+        }
+        await signInWithRedirect(auth, provider);
+      }
     }
   },
 

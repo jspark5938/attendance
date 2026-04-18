@@ -45,8 +45,8 @@ export class LoginPage {
 
             <div class="login-legal">
               <p>계속 진행하면 출석부의
-                <a href="#" class="login-legal-link">이용약관</a> 및
-                <a href="#" class="login-legal-link">개인정보처리방침</a>에 동의하게 됩니다.
+                <a href="#/" class="login-legal-link" onclick="return false">이용약관</a> 및
+                <a href="#/" class="login-legal-link" onclick="return false">개인정보처리방침</a>에 동의하게 됩니다.
               </p>
             </div>
           </div>
@@ -59,15 +59,42 @@ export class LoginPage {
     const googleBtn = document.getElementById('google-signin-btn');
     const guestBtn  = document.getElementById('guest-mode-btn');
 
+    let _signinPopup = null;
+
+    // 팝업이 열려있을 때 뒤로가기 → 팝업 닫기
+    const _onPopState = () => {
+      if (_signinPopup && !_signinPopup.closed) {
+        _signinPopup.close();
+        _signinPopup = null;
+        // 로그인 페이지에 그대로 머물도록 현재 위치 복원
+        history.pushState(null, '', window.location.href);
+      }
+    };
+    window.addEventListener('popstate', _onPopState);
+    this._removePopState = () => window.removeEventListener('popstate', _onPopState);
+
     googleBtn?.addEventListener('click', async () => {
       googleBtn.disabled = true;
       googleBtn.innerHTML = `<span style="display:inline-block;width:18px;height:18px;border:2px solid #c7c4d8;border-top-color:#4F46E5;border-radius:50%;animation:spin .7s linear infinite;"></span><span>로그인 중...</span>`;
+
+      // window.open을 잠시 가로채서 팝업 참조 확보
+      const _origOpen = window.open.bind(window);
+      window.open = (...args) => {
+        _signinPopup = _origOpen(...args);
+        return _signinPopup;
+      };
+      // 팝업 열리기 전 히스토리 항목 추가 → 뒤로가기 시 popstate 발생
+      history.pushState(null, '', window.location.href);
+
       try {
         await AuthService.signIn();
       } catch (e) {
         Toast.error('로그인에 실패했습니다: ' + (e.message || ''));
         googleBtn.disabled = false;
         googleBtn.innerHTML = `${GOOGLE_SVG}<span>Google로 로그인</span>`;
+      } finally {
+        window.open = _origOpen;
+        _signinPopup = null;
       }
     });
 
@@ -77,5 +104,7 @@ export class LoginPage {
     });
   }
 
-  destroy() {}
+  destroy() {
+    this._removePopState?.();
+  }
 }

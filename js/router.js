@@ -41,8 +41,19 @@ export class Router {
    * Start listening to hashchange events
    */
   start() {
-    window.addEventListener('hashchange', () => this._resolve());
+    this._onHashChange = () => this._resolve();
+    window.addEventListener('hashchange', this._onHashChange);
     this._resolve();
+  }
+
+  /**
+   * Stop listening to hashchange events
+   */
+  stop() {
+    if (this._onHashChange) {
+      window.removeEventListener('hashchange', this._onHashChange);
+      this._onHashChange = null;
+    }
   }
 
   /**
