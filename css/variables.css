@@ -1,30 +1,31 @@
 :root {
-  /* Brand Colors */
-  --color-primary: #4F46E5;
-  --color-primary-hover: #4338CA;
-  --color-primary-light: #EEF2FF;
+  /* Brand Colors — Claude-style warm coral */
+  --color-primary: #D97757;
+  --color-primary-hover: #C4623D;
+  --color-primary-light: #FEF3EC;
+  --color-primary-muted: #F5D5C3;
 
   /* Attendance Status Colors */
-  --color-present: #10B981;
-  --color-present-light: #D1FAE5;
-  --color-absent: #EF4444;
+  --color-present: #16A34A;
+  --color-present-light: #DCFCE7;
+  --color-absent: #DC2626;
   --color-absent-light: #FEE2E2;
-  --color-late: #F59E0B;
+  --color-late: #D97706;
   --color-late-light: #FEF3C7;
-  --color-early: #8B5CF6;
+  --color-early: #7C3AED;
   --color-early-light: #EDE9FE;
 
-  /* Neutral */
-  --color-bg: #F8FAFC;
+  /* Neutral — warm-tinted grays */
+  --color-bg: #FAF8F6;
   --color-surface: #FFFFFF;
-  --color-surface-2: #F1F5F9;
-  --color-text: #1E293B;
-  --color-text-muted: #64748B;
-  --color-border: #E2E8F0;
-  --color-border-light: #F1F5F9;
+  --color-surface-2: #F5F1EE;
+  --color-text: #1C1917;
+  --color-text-muted: #78716C;
+  --color-border: #E7E0DA;
+  --color-border-light: #F0EBE6;
 
   /* Premium */
-  --color-premium: #F59E0B;
+  --color-premium: #D97706;
   --color-premium-light: #FFFBEB;
 
   /* Layout */
@@ -34,8 +35,8 @@
   --content-max-width: 900px;
 
   /* Typography */
-  --font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo',
-    'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-headline: 'Plus Jakarta Sans', 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  --font-family: 'Manrope', 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-size-xs: 11px;
   --font-size-sm: 13px;
   --font-size-base: 15px;
@@ -60,17 +61,17 @@
   --space-10: 40px;
   --space-12: 48px;
 
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  /* Border Radius — rounder for warmth */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
-  --shadow-lg: 0 10px 30px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.05);
+  /* Shadows — warmer tint */
+  --shadow-sm: 0 1px 4px rgba(120, 80, 50, 0.07), 0 1px 2px rgba(120, 80, 50, 0.04);
+  --shadow-md: 0 4px 16px rgba(120, 80, 50, 0.10), 0 2px 4px rgba(120, 80, 50, 0.05);
+  --shadow-lg: 0 12px 36px rgba(120, 80, 50, 0.12), 0 4px 8px rgba(120, 80, 50, 0.06);
 
   /* Transitions */
   --transition-fast: 120ms ease;
@@ -84,6 +85,3 @@
   --z-modal: 210;
   --z-toast: 300;
 }
-
-/* Dark mode (future) */
-/* @media (prefers-color-scheme: dark) { ... } */

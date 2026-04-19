@@ -55,9 +55,9 @@
 .btn-primary {
   background: var(--color-primary);
   color: white;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 2px 8px rgba(217, 119, 87, 0.30);
 }
-.btn-primary:hover { background: var(--color-primary-hover); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35); }
+.btn-primary:hover { background: var(--color-primary-hover); box-shadow: 0 4px 14px rgba(217, 119, 87, 0.40); }
 
 .btn-secondary {
   background: var(--color-surface-2);
@@ -68,9 +68,9 @@
 .btn-outline {
   background: transparent;
   color: var(--color-primary);
-  border: 1.5px solid var(--color-primary);
+  border: 1.5px solid var(--color-primary-muted);
 }
-.btn-outline:hover { background: var(--color-primary-light); }
+.btn-outline:hover { background: var(--color-primary-light); border-color: var(--color-primary); }
 
 .btn-ghost {
   background: transparent;
@@ -87,9 +87,9 @@
 .btn-premium {
   background: linear-gradient(135deg, #F59E0B, #D97706);
   color: white;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 8px rgba(217, 119, 11, 0.30);
 }
-.btn-premium:hover { box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4); }
+.btn-premium:hover { box-shadow: 0 4px 14px rgba(217, 119, 11, 0.42); }
 
 .btn-full { width: 100%; }
 
@@ -120,6 +120,7 @@
 .card-title {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
+  font-family: var(--font-headline);
 }
 
 .card-footer {
@@ -400,7 +401,7 @@
 .form-select:focus,
 .form-textarea:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.14);
 }
 
 .form-input::placeholder,
@@ -812,7 +813,7 @@
   right: -10%;
   width: 480px;
   height: 480px;
-  background: rgba(79, 70, 229, 0.06);
+  background: rgba(217, 119, 87, 0.08);
 }
 
 .login-bg-blob--bottom {
@@ -820,7 +821,7 @@
   left: -10%;
   width: 400px;
   height: 400px;
-  background: rgba(49, 48, 192, 0.05);
+  background: rgba(196, 98, 61, 0.06);
 }
 
 .login-container {
@@ -841,7 +842,7 @@
 .login-logo {
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, #3525cd, var(--color-primary));
+  background: linear-gradient(135deg, #C4623D, var(--color-primary));
   border-radius: 18px;
   display: flex;
   align-items: center;
@@ -850,12 +851,13 @@
   font-size: 28px;
   font-weight: 800;
   margin: 0 auto var(--space-5);
-  box-shadow: 0 20px 40px rgba(53, 37, 205, 0.18);
+  box-shadow: 0 20px 40px rgba(217, 119, 87, 0.25);
 }
 
 .login-title {
   font-size: var(--font-size-2xl);
   font-weight: 800;
+  font-family: var(--font-headline);
   color: var(--color-text);
   letter-spacing: -0.5px;
   margin-bottom: var(--space-2);

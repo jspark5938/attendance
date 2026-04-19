@@ -70,7 +70,7 @@ body {
 .sidebar-logo-icon {
   width: 32px;
   height: 32px;
-  background: var(--color-primary);
+  background: linear-gradient(135deg, #C4623D, var(--color-primary));
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -79,11 +79,13 @@ body {
   font-size: 16px;
   font-weight: var(--font-weight-bold);
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(217, 119, 87, 0.30);
 }
 
 .sidebar-logo-text {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
+  font-family: var(--font-headline);
   color: var(--color-text);
 }
 
@@ -225,6 +227,7 @@ body {
 .page-title {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
+  font-family: var(--font-headline);
   color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
