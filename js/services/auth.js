@@ -33,11 +33,25 @@ export const AuthService = {
       try {
         await signInWithPopup(auth, provider);
       } catch (popupErr) {
-        // Popup blocked or unavailable — fall back to redirect
-        if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/popup-closed-by-user') {
+        // 도메인 미허용: redirect도 동일하게 실패하므로 바로 throw
+        if (popupErr.code === 'auth/unauthorized-domain') {
+          throw new Error(
+            '이 도메인은 Firebase 인증에 허용되지 않았습니다.\n' +
+            'Firebase Console → Authentication → Settings → 승인된 도메인에 현재 도메인을 추가해주세요.'
+          );
+        }
+        // 사용자가 팝업을 직접 닫은 경우 — 조용히 종료
+        if (popupErr.code === 'auth/popup-closed-by-user' ||
+            popupErr.code === 'auth/cancelled-popup-request') {
           throw popupErr;
         }
-        await signInWithRedirect(auth, provider);
+        // 팝업 차단된 경우에만 redirect 폴백
+        if (popupErr.code === 'auth/popup-blocked') {
+          await signInWithRedirect(auth, provider);
+          return;
+        }
+        // 그 외 오류는 원본 그대로 throw
+        throw popupErr;
       }
     }
   },

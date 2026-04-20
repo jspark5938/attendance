@@ -92,7 +92,7 @@ export class LoginPage {
 
     googleBtn?.addEventListener('click', async () => {
       googleBtn.disabled = true;
-      googleBtn.innerHTML = `<span style="display:inline-block;width:18px;height:18px;border:2px solid #c7c4d8;border-top-color:#4F46E5;border-radius:50%;animation:spin .7s linear infinite;"></span><span>로그인 중...</span>`;
+      googleBtn.innerHTML = `<span style="display:inline-block;width:18px;height:18px;border:2px solid #f5d5c3;border-top-color:#D97757;border-radius:50%;animation:spin .7s linear infinite;"></span><span>로그인 중...</span>`;
 
       // window.open을 잠시 가로채서 팝업 참조 확보
       const _origOpen = window.open.bind(window);
@@ -106,7 +106,12 @@ export class LoginPage {
       try {
         await AuthService.signIn();
       } catch (e) {
-        Toast.error('로그인에 실패했습니다: ' + (e.message || ''));
+        // 사용자가 팝업을 직접 닫은 경우 — 오류 메시지 없이 버튼만 복구
+        const silent = e.code === 'auth/popup-closed-by-user' ||
+                       e.code === 'auth/cancelled-popup-request';
+        if (!silent) {
+          Toast.error('로그인에 실패했습니다: ' + (e.message || e.code || ''));
+        }
         googleBtn.disabled = false;
         googleBtn.innerHTML = `${GOOGLE_SVG}<span>Google로 로그인</span>`;
       } finally {
