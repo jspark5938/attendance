@@ -45,8 +45,8 @@ export class LoginPage {
 
             <div class="login-legal">
               <p>계속 진행하면 출석부의
-                <a href="#/" class="login-legal-link" onclick="return false">이용약관</a> 및
-                <a href="#/" class="login-legal-link" onclick="return false">개인정보처리방침</a>에 동의하게 됩니다.
+                <a href="#" class="login-legal-link" id="terms-link">이용약관</a> 및
+                <a href="#" class="login-legal-link" id="privacy-link">개인정보처리방침</a>에 동의하게 됩니다.
               </p>
             </div>
           </div>
@@ -58,6 +58,23 @@ export class LoginPage {
   async mount() {
     const googleBtn = document.getElementById('google-signin-btn');
     const guestBtn  = document.getElementById('guest-mode-btn');
+
+    const BASE_URL = 'https://attendance.jspark5938.workers.dev';
+    const openUrl = (url) => {
+      // Capacitor Android: _system 으로 시스템 브라우저 열기
+      // 웹: 새 탭 열기
+      window.open(url, '_system') || window.open(url, '_blank');
+    };
+
+    document.getElementById('terms-link')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      openUrl(`${BASE_URL}/docs/terms.html`);
+    });
+
+    document.getElementById('privacy-link')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      openUrl(`${BASE_URL}/docs/privacy.html`);
+    });
 
     let _signinPopup = null;
 
