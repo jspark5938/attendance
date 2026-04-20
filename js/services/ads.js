@@ -15,6 +15,10 @@ const REAL_BANNER_ID = 'ca-app-pub-1007656354860622/8325774890';
 // true = 테스트 광고, false = 실제 광고
 const USE_TEST_ADS = false;
 
+// 배너 로드 실패 시 최대 재시도 횟수 및 대기 시간
+const MAX_RETRY = 3;
+const RETRY_DELAY_MS = 30_000; // 30초
+
 const isAndroid = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
 
 export const AdsService = {
@@ -60,14 +64,30 @@ export const AdsService = {
     }
   },
 
-  /** 시스템 바(홈 버튼 영역) 높이를 px로 반환 */
+  /**
+   * CSS env()가 레이아웃에 반영된 후 safe-area-inset-bottom 높이를 반환.
+   * rAF 두 번으로 렌더링 완료를 보장해 동기 측정 시 0이 나오는 문제 방지.
+   */
   _getSafeAreaBottom() {
-    const el = document.createElement('div');
-    el.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden;';
-    document.body.appendChild(el);
-    const h = el.offsetHeight;
-    document.body.removeChild(el);
-    return h;
+    return new Promise(resolve => {
+      requestAnimationFrame(() => {
+        const el = document.createElement('div');
+        el.style.cssText =
+          'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);' +
+          'pointer-events:none;visibility:hidden;';
+        document.body.appendChild(el);
+        requestAnimationFrame(() => {
+          const h = el.offsetHeight || 0;
+          document.body.removeChild(el);
+          resolve(h);
+        });
+      });
+    });
+  },
+
+  /** --ad-bottom-offset CSS 변수 설정 (body 패딩·모달 높이 일괄 반영) */
+  _setOffset(px) {
+    document.documentElement.style.setProperty('--ad-bottom-offset', `${px}px`);
   },
 
   /** AdMob: initialize banner via Capacitor plugin */
@@ -81,34 +101,63 @@ export const AdsService = {
         initializeForTesting: USE_TEST_ADS,
       });
 
-      // Java에서 정확한 nav bar 높이 취득 (CSS env() 보다 타이밍에 안전)
-      const safeBottom = window.AndroidBridge?.getNavBarHeight() || this._getSafeAreaBottom();
+      await this._showBannerWithRetry(AdMob, 0);
+    } catch (e) {
+      console.warn('[AdsService] AdMob init failed:', e);
+    }
+  },
 
-      // CSS 커스텀 프로퍼티로 오프셋 적용 (body 패딩 + 모달 max-height 등 일괄 반영)
-      const setOffset = (px) => {
-        document.documentElement.style.setProperty('--ad-bottom-offset', `${px}px`);
-      };
+  /**
+   * 배너 표시 + 실패 시 자동 재시도.
+   * attempt: 현재 시도 횟수 (0부터 시작)
+   */
+  async _showBannerWithRetry(AdMob, attempt) {
+    if (attempt >= MAX_RETRY) {
+      console.warn('[AdsService] Banner failed after max retries, giving up.');
+      return;
+    }
 
-      // 배너 로드 완료 시 (배너 높이 + nav bar 높이)만큼 오프셋 설정
+    // CSS env() 반영 이후 안전 영역 높이 측정
+    const safeBottom =
+      window.AndroidBridge?.getNavBarHeight?.() ??
+      (await this._getSafeAreaBottom());
+
+    // 이전 리스너 정리 (재시도 시 중복 등록 방지)
+    this._bannerListeners?.forEach(h => h.remove?.());
+    this._bannerListeners = [];
+
+    this._bannerListeners.push(
       AdMob.addListener('bannerAdLoaded', (info) => {
         const height = info?.adSize?.height ?? 60;
-        setOffset(height + safeBottom);
-      });
+        this._setOffset(height + safeBottom);
+      })
+    );
 
-      // 배너 실패 시 nav bar 높이만큼만 오프셋 유지
-      AdMob.addListener('bannerAdFailedToLoad', () => {
-        setOffset(safeBottom);
-      });
+    this._bannerListeners.push(
+      AdMob.addListener('bannerAdFailedToLoad', (error) => {
+        console.warn(`[AdsService] Banner load failed (attempt ${attempt + 1}/${MAX_RETRY}):`, error?.message ?? error);
+        this._setOffset(safeBottom);
+        setTimeout(
+          () => this._showBannerWithRetry(AdMob, attempt + 1),
+          RETRY_DELAY_MS
+        );
+      })
+    );
 
+    try {
       await AdMob.showBanner({
         adId: USE_TEST_ADS ? TEST_BANNER_ID : REAL_BANNER_ID,
         adSize: 'ADAPTIVE_BANNER',
         position: 'BOTTOM_CENTER',
-        margin: safeBottom,  // 시스템 바 위로 배너 띄우기
+        margin: safeBottom,
         npa: false,
       });
     } catch (e) {
-      console.warn('[AdsService] AdMob init failed:', e);
+      console.warn('[AdsService] showBanner threw:', e);
+      setTimeout(
+        () => this._showBannerWithRetry(AdMob, attempt + 1),
+        RETRY_DELAY_MS
+      );
     }
   },
 };
