@@ -12,7 +12,7 @@ import Modal from '../components/modal.js';
 import Toast from '../components/toast.js';
 import { escapeHtml } from '../utils/dom.js';
 import { todayStr, formatDateKo, strToDate } from '../utils/date.js';
-import { STATUS_LABELS, MESSAGES } from '../utils/i18n.js';
+import { STATUS_LABELS, MESSAGES, FREE_LIMITS } from '../utils/i18n.js';
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const GENDER_LABELS = { male: '남', female: '여', other: '기타' };
@@ -208,10 +208,17 @@ export class GroupDetailPage {
   async mount() {
     this._loadContractStatus();
 
-    // 구성원 추가
-    document.getElementById('add-student-btn')?.addEventListener('click', () => this._openAddStudent());
-    document.getElementById('add-student-card-btn')?.addEventListener('click', () => this._openAddStudent());
-    document.getElementById('add-student-empty-btn')?.addEventListener('click', () => this._openAddStudent());
+    // 구성원 추가 — async 오류가 묻히지 않도록 try/catch 포함
+    const onAddClick = async () => {
+      try {
+        await this._openAddStudent();
+      } catch (e) {
+        Toast.error('오류: ' + (e.message || '구성원 추가에 실패했습니다.'));
+      }
+    };
+    document.getElementById('add-student-btn')?.addEventListener('click', onAddClick);
+    document.getElementById('add-student-card-btn')?.addEventListener('click', onAddClick);
+    document.getElementById('add-student-empty-btn')?.addEventListener('click', onAddClick);
 
     // 검색
     document.getElementById('student-search')?.addEventListener('input', (e) => {
@@ -333,6 +340,18 @@ export class GroupDetailPage {
   // ─── 구성원 추가 ────────────────────────────────────────────────
 
   async _openAddStudent() {
+    // 무료 플랜 학생 수 제한 확인
+    const isPremium = await PremiumService.isPremium();
+    if (!isPremium && this.students.length >= FREE_LIMITS.students) {
+      Modal.open({
+        title: '프리미엄 플랜 필요',
+        body: `<p style="color:var(--color-text-muted);white-space:pre-line;">${MESSAGES.freeStudentLimit}</p>`,
+        confirmText: '프리미엄 보기',
+        onConfirm: () => { window.location.hash = '/premium'; },
+      });
+      return;
+    }
+
     const nextNum = await StudentsDB.nextNumber(this.groupId);
     Modal.open({
       title: '구성원 추가',
