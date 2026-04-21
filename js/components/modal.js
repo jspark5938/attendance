@@ -67,6 +67,8 @@ const Modal = {
     footer.style.display = (hideCancel && hideConfirm) ? 'none' : '';
 
     backdrop.style.display = 'flex';
+    // 이전 모달에서 스크롤된 위치 초기화
+    backdrop.querySelector('.modal').scrollTop = 0;
     requestAnimationFrame(() => backdrop.classList.add('visible'));
 
     // Focus management
