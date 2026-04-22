@@ -32,11 +32,9 @@ let _appInitialized = false;
 function _showAppShell(visible) {
   const sidebar   = document.querySelector('.sidebar');
   const bottomNav = document.querySelector('.bottom-nav');
-  const mobileHdr = document.querySelector('.mobile-header');
   const pageHdr   = document.querySelector('.page-header');
   if (sidebar)   sidebar.style.display   = visible ? '' : 'none';
   if (bottomNav) bottomNav.style.display = visible ? '' : 'none';
-  if (mobileHdr) mobileHdr.style.display = visible ? '' : 'none';
   if (pageHdr)   pageHdr.style.display   = visible ? '' : 'none';
 }
 

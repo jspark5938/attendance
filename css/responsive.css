@@ -10,8 +10,6 @@
   /* Show bottom nav, hide sidebar */
   .sidebar { display: none !important; }
   .bottom-nav { display: flex !important; }
-  .mobile-header { display: flex !important; }
-
   /* Main content: no left margin */
   .main-content {
     margin-left: 0;
@@ -51,15 +49,14 @@
     max-width: 100%;
   }
 
-  /* Push page content below fixed top nav bar + status bar */
+  /* Push page content below status bar only (no header) */
   #app-content {
-    padding-top: calc(44px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
   }
 
   /* Full-width page header */
   .page-header {
     padding: var(--space-3) var(--space-4);
-    display: none; /* Mobile uses mobile-header instead */
   }
 
   .page-body {
@@ -186,7 +183,6 @@
   }
 
   .bottom-nav { display: none !important; }
-  .mobile-header { display: none !important; }
 }
 
 /* ---- WIDE DESKTOP (>= 1280px) ---- */
@@ -227,7 +223,6 @@
 @media print {
   .sidebar,
   .bottom-nav,
-  .mobile-header,
   .btn,
   .quick-mark-bar,
   #toast-container {
@@ -283,7 +278,6 @@
   /* Force mobile nav layout */
   .sidebar { display: none !important; }
   .bottom-nav { display: flex !important; }
-  .mobile-header { display: flex !important; }
 
   /* Reset sidebar offset */
   .main-content {
@@ -292,9 +286,9 @@
     width: 100%;
   }
 
-  /* Push content below fixed tab bar + status bar */
+  /* Push content below status bar only */
   #app-content {
-    padding-top: calc(44px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
     overflow-x: clip;
     max-width: 100%;
     width: 100%;

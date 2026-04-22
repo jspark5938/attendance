@@ -78,7 +78,6 @@ export class Router {
     const subtitleEl = document.querySelector('.page-subtitle');
     const actionsEl  = document.querySelector('.page-header-actions');
     const headerEl   = document.querySelector('.page-header');
-    const mobileHeaderEl = document.querySelector('.mobile-header-title');
 
     if (titleEl) titleEl.textContent = title;
     if (subtitleEl) {
@@ -87,7 +86,6 @@ export class Router {
     }
     if (actionsEl) actionsEl.innerHTML = actions;
     if (headerEl) headerEl.style.display = '';
-    if (mobileHeaderEl) mobileHeaderEl.textContent = title;
   }
 
   async _resolve() {
