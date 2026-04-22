@@ -62,8 +62,8 @@ async function _initApp() {
   Sidebar.init();
   BottomNav.init();
 
-  // 3. Init ads (after premium check)
-  await AdsService.init(isPremium);
+  // 3. Init ads (after premium check) — 백그라운드 실행, 앱 로딩을 블록하지 않음
+  AdsService.init(isPremium).catch(e => console.warn('[App] AdsService init failed:', e));
 
   // 4. Register routes (only once)
   _router = new Router();

@@ -355,7 +355,14 @@ export class AttendancePage {
     if (!ok) return;
 
     try {
-      await Promise.all(this.students.map(s => AttendanceDB.remove(s.id, this.date)));
+      const results = await Promise.allSettled(
+        this.students.map(s => AttendanceDB.remove(s.id, this.date))
+      );
+      const failed = results.filter(r => r.status === 'rejected').length;
+      if (failed > 0) {
+        Toast.error(`${failed}명의 기록 삭제에 실패했습니다. 다시 시도해주세요.`);
+        return;
+      }
       this.attendanceMap = {};
       document.querySelectorAll('.att-btn').forEach(btn => {
         btn.classList.remove('active');

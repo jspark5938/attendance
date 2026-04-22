@@ -3,8 +3,8 @@ package com.jspark5938.attendance;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
+import androidx.activity.EdgeToEdge;
 import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
 
@@ -14,8 +14,8 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         // WebView 리스너는 건드리지 않음 (Capacitor 내부 리스너 유지 → env() CSS 정상 동작)
         // 루트 콘텐츠뷰에서 네비게이션 바 높이만 캐시하고 인셋을 소비하지 않고 전파

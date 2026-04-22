@@ -26,8 +26,10 @@ export const AuthService = {
     if (isCapacitor()) {
       const FirebaseAuthentication = window.Capacitor?.Plugins?.FirebaseAuthentication;
       if (!FirebaseAuthentication) throw new Error('FirebaseAuthentication 플러그인을 찾을 수 없습니다.');
-      const result = await FirebaseAuthentication.signInWithGoogle({ useCredentialManager: false });
-      const credential = GoogleAuthProvider.credential(result.credential?.idToken);
+      const result = await FirebaseAuthentication.signInWithGoogle({ useCredentialManager: true });
+      const idToken = result.credential?.idToken;
+      if (!idToken) throw new Error('Google 인증 토큰을 받지 못했습니다. 다시 시도해주세요.');
+      const credential = GoogleAuthProvider.credential(idToken);
       await signInWithCredential(auth, credential);
     } else {
       try {
