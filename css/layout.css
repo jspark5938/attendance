@@ -260,7 +260,7 @@ body {
 .bottom-nav {
   display: none;
   position: fixed;
-  top: calc(var(--header-height) + env(safe-area-inset-top));
+  top: env(safe-area-inset-top);
   left: 0;
   right: 0;
   height: 44px;
