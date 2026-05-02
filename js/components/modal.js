@@ -8,6 +8,7 @@
  */
 
 import { focusFirst } from '../utils/dom.js';
+import { t } from '../utils/i18n.js';
 
 const Modal = {
   _backdrop: null,
@@ -34,7 +35,9 @@ const Modal = {
    * @param {boolean} [opts.hideCancel]
    * @param {boolean} [opts.hideConfirm]
    */
-  open({ title, body, onConfirm, confirmText = '확인', cancelText = '취소', danger = false, hideCancel = false, hideConfirm = false }) {
+  open({ title, body, onConfirm, confirmText, cancelText, danger = false, hideCancel = false, hideConfirm = false }) {
+    confirmText = confirmText ?? t('modal.confirm');
+    cancelText  = cancelText  ?? t('modal.cancel');
     const backdrop = this._getBackdrop();
     if (!backdrop) return;
 
