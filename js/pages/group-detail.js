@@ -12,10 +12,10 @@ import Modal from '../components/modal.js';
 import Toast from '../components/toast.js';
 import { escapeHtml } from '../utils/dom.js';
 import { todayStr, formatDateKo, strToDate } from '../utils/date.js';
-import { STATUS_LABELS, MESSAGES } from '../utils/i18n.js';
+import { t } from '../utils/i18n.js';
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
-const GENDER_LABELS = { male: '남', female: '여', other: '기타' };
+const genderLabel = (g) => ({ male: t('groupDetail.genderMale'), female: t('groupDetail.genderFemale'), other: t('groupDetail.genderOther') }[g] || '—');
 
 export class GroupDetailPage {
   constructor(params, query) {
@@ -34,8 +34,8 @@ export class GroupDetailPage {
     if (!this.group) {
       return `<div class="page-body"><div class="empty-state">
         <div class="empty-state-icon">⚠</div>
-        <div class="empty-state-title">그룹을 찾을 수 없습니다</div>
-        <div class="empty-state-desc"><a href="#/groups">그룹 목록으로</a></div>
+        <div class="empty-state-title">${t('common.groupNotFound')}</div>
+        <div class="empty-state-desc"><a href="#/groups">${t('groupDetail.backToGroups')}</a></div>
       </div></div>`;
     }
 
@@ -53,40 +53,40 @@ export class GroupDetailPage {
               <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${escapeHtml(this.group.color)};margin-right:8px;vertical-align:middle;"></span>
               ${escapeHtml(this.group.name)}
             </h1>
-            <div class="page-subtitle">구성원 ${this.students.length}명 · ${formatDateKo(this.today, { monthDay: true })} 출석 현황</div>
+            <div class="page-subtitle">${t('groupDetail.memberCount', { n: this.students.length })} · ${t('groupDetail.todayStatus', { monthDay: formatDateKo(this.today, { monthDay: true }) })}</div>
           </div>
         </div>
         <div class="page-header-actions">
-          <a href="#/groups/${this.groupId}/attend" class="btn btn-primary">오늘 출석 체크</a>
-          <button class="btn btn-secondary" id="add-student-btn">+ 구성원 추가</button>
+          <a href="#/groups/${this.groupId}/attend" class="btn btn-primary">${t('groupDetail.attendCheck')}</a>
+          <button class="btn btn-secondary" id="add-student-btn">${t('groupDetail.addMember')}</button>
         </div>
       </div>
 
       <div class="page-body">
         <!-- 오늘 출석 요약 -->
         <div class="stat-cards-grid" style="margin-bottom: var(--space-5);">
-          ${this._summaryCard('출석', summary.present, 'var(--color-present)')}
-          ${this._summaryCard('결석', summary.absent, 'var(--color-absent)')}
-          ${this._summaryCard('지각', summary.late, 'var(--color-late)')}
-          ${this._summaryCard('미입력', summary.none, 'var(--color-text-muted)')}
+          ${this._summaryCard(t('status.present'), summary.present, 'var(--color-present)')}
+          ${this._summaryCard(t('status.absent'), summary.absent, 'var(--color-absent)')}
+          ${this._summaryCard(t('status.late'), summary.late, 'var(--color-late)')}
+          ${this._summaryCard(t('status.none'), summary.none, 'var(--color-text-muted)')}
         </div>
 
         <!-- 빠른 이동 -->
         <div style="display:flex; gap:8px; margin-bottom: var(--space-5); flex-wrap:wrap;">
-          <a href="#/groups/${this.groupId}/attend" class="btn btn-outline btn-sm">📋 출석 체크</a>
-          <a href="#/groups/${this.groupId}/calendar" class="btn btn-outline btn-sm">📅 달력</a>
-          <a href="#/groups/${this.groupId}/stats" class="btn btn-outline btn-sm">📊 통계</a>
+          <a href="#/groups/${this.groupId}/attend" class="btn btn-outline btn-sm">${t('groupDetail.attendLink')}</a>
+          <a href="#/groups/${this.groupId}/calendar" class="btn btn-outline btn-sm">${t('groupDetail.calendarLink')}</a>
+          <a href="#/groups/${this.groupId}/stats" class="btn btn-outline btn-sm">${t('groupDetail.statsLink')}</a>
         </div>
 
         <!-- 구성원 목록 -->
         <div class="card">
           <div class="card-header">
-            <div class="card-title">구성원 목록</div>
+            <div class="card-title">${t('groupDetail.memberList')}</div>
             <div style="display:flex; align-items:center; gap:8px;">
               <input type="text" id="student-search" class="form-input"
-                placeholder="이름 검색..." style="width:120px; padding: 6px 12px; font-size:13px;"
+                placeholder="${t('placeholders.search')}" style="width:120px; padding: 6px 12px; font-size:13px;"
                 value="${escapeHtml(this._searchQuery)}">
-              <button class="btn btn-primary btn-sm" id="add-student-card-btn">+ 추가</button>
+              <button class="btn btn-primary btn-sm" id="add-student-card-btn">${t('groupDetail.addShort')}</button>
             </div>
           </div>
 
@@ -117,9 +117,9 @@ export class GroupDetailPage {
     return `
       <div class="empty-state" style="padding: var(--space-10);">
         <div class="empty-state-icon">👤</div>
-        <div class="empty-state-title">구성원이 없습니다</div>
-        <div class="empty-state-desc">구성원을 추가해 출석을 관리해 보세요.</div>
-        <button class="btn btn-primary" id="add-student-empty-btn" style="margin-top: 8px;">+ 구성원 추가</button>
+        <div class="empty-state-title">${t('groupDetail.noMembers')}</div>
+        <div class="empty-state-desc">${t('groupDetail.noMembersDesc')}</div>
+        <button class="btn btn-primary" id="add-student-empty-btn" style="margin-top: 8px;">${t('groupDetail.addMemberEmpty')}</button>
       </div>
     `;
   }
@@ -131,7 +131,7 @@ export class GroupDetailPage {
 
     if (!filtered.length) {
       return `<div class="empty-state" style="padding: var(--space-8);">
-        <div class="empty-state-desc">"${escapeHtml(this._searchQuery)}" 검색 결과가 없습니다.</div>
+        <div class="empty-state-desc">${t('groupDetail.searchNoResult', { query: escapeHtml(this._searchQuery) })}</div>
       </div>`;
     }
 
@@ -140,17 +140,17 @@ export class GroupDetailPage {
         <table class="student-table" style="width:100%; border-collapse:collapse; font-size: var(--font-size-sm);">
           <thead>
             <tr style="background:var(--color-surface-2);">
-              <th style="${thStyle()}">번호</th>
-              <th style="${thStyle('left')}">이름</th>
-              <th style="${thStyle()}" class="col-age">나이</th>
-              <th style="${thStyle()}" class="col-gender">성별</th>
-              <th style="${thStyle('left')}" class="col-phone">연락처</th>
-              <th style="${thStyle('left')}" class="col-days">출석 요일</th>
-              <th style="${thStyle()}" class="col-time">시간</th>
-              <th style="${thStyle()}" class="col-reg">등록일</th>
-              <th style="${thStyle()}" class="col-contract">계약</th>
-              <th style="${thStyle()}">오늘</th>
-              <th style="${thStyle()}">관리</th>
+              <th style="${thStyle()}">${t('groupDetail.colNumber')}</th>
+              <th style="${thStyle('left')}">${t('groupDetail.colName')}</th>
+              <th style="${thStyle()}" class="col-age">${t('groupDetail.colAge')}</th>
+              <th style="${thStyle()}" class="col-gender">${t('groupDetail.colGender')}</th>
+              <th style="${thStyle('left')}" class="col-phone">${t('groupDetail.colPhone')}</th>
+              <th style="${thStyle('left')}" class="col-days">${t('groupDetail.colDays')}</th>
+              <th style="${thStyle()}" class="col-time">${t('groupDetail.colTime')}</th>
+              <th style="${thStyle()}" class="col-reg">${t('groupDetail.colReg')}</th>
+              <th style="${thStyle()}" class="col-contract">${t('groupDetail.colContract')}</th>
+              <th style="${thStyle()}">${t('groupDetail.colToday')}</th>
+              <th style="${thStyle()}">${t('groupDetail.colManage')}</th>
             </tr>
           </thead>
           <tbody id="student-tbody">
@@ -184,7 +184,7 @@ export class GroupDetailPage {
           </button>
         </td>
         <td style="${tdStyle()}" class="col-age">${s.age ?? '—'}</td>
-        <td style="${tdStyle()}" class="col-gender">${GENDER_LABELS[s.gender] || '—'}</td>
+        <td style="${tdStyle()}" class="col-gender">${genderLabel(s.gender)}</td>
         <td style="${tdStyle('left')}" class="col-phone">${s.phone ? `<a href="tel:${escapeHtml(s.phone)}" style="color:var(--color-primary);">${escapeHtml(s.phone)}</a>` : '—'}</td>
         <td style="${tdStyle('left')}" class="col-days">${escapeHtml(days)}</td>
         <td style="${tdStyle()}" class="col-time">${escapeHtml(timeStr)}</td>
@@ -192,13 +192,13 @@ export class GroupDetailPage {
         <td style="${tdStyle()}" class="col-contract">${this._contractCellHtml(s)}</td>
         <td style="${tdStyle()}">
           ${att
-            ? `<span class="badge badge-${att.status}">${STATUS_LABELS[att.status]}</span>`
-            : `<span class="badge badge-none">미입력</span>`}
+            ? `<span class="badge badge-${att.status}">${t('status.' + att.status)}</span>`
+            : `<span class="badge badge-none">${t('status.none')}</span>`}
         </td>
         <td style="${tdStyle()}">
           <div style="display:flex; gap:4px; justify-content:center;">
-            <button class="btn btn-ghost btn-icon-sm edit-student-btn" data-id="${s.id}" title="수정">✎</button>
-            <button class="btn btn-ghost btn-icon-sm delete-student-btn" data-id="${s.id}" title="삭제" style="color:var(--color-absent);">✕</button>
+            <button class="btn btn-ghost btn-icon-sm edit-student-btn" data-id="${s.id}" title="${t('common.edit')}">✎</button>
+            <button class="btn btn-ghost btn-icon-sm delete-student-btn" data-id="${s.id}" title="${t('common.delete')}" style="color:var(--color-absent);">✕</button>
           </div>
         </td>
       </tr>
@@ -213,7 +213,7 @@ export class GroupDetailPage {
       try {
         await this._openAddStudent();
       } catch (e) {
-        Toast.error('오류: ' + (e.message || '구성원 추가에 실패했습니다.'));
+        Toast.error(t('groupDetail.addError', { msg: e.message || '' }));
       }
     };
     document.getElementById('add-student-btn')?.addEventListener('click', onAddClick);
@@ -281,7 +281,7 @@ export class GroupDetailPage {
         return `
           <div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px solid var(--color-border-light);">
             <span style="min-width:72px; font-size:13px; color:var(--color-text-muted);">${mmdd} (${dow})</span>
-            <span class="badge badge-${r.status}">${STATUS_LABELS[r.status]}</span>
+            <span class="badge badge-${r.status}">${t('status.' + r.status)}</span>
             ${r.note ? `<span style="font-size:12px; color:var(--color-text-muted); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(r.note)}</span>` : ''}
           </div>`;
       }).join('');
@@ -599,7 +599,7 @@ export class GroupDetailPage {
 
   async _submitAdd() {
     const data = this._readForm();
-    if (!data.name) { Toast.error(MESSAGES.nameRequired); return; }
+    if (!data.name) { Toast.error(t('messages.nameRequired')); return; }
     try {
       const student = await StudentsDB.create({ groupId: this.groupId, ...data });
 
@@ -634,38 +634,38 @@ export class GroupDetailPage {
         });
       }
 
-      Toast.success(MESSAGES.studentCreated);
+      Toast.success(t('messages.studentCreated'));
       await this._reload();
-    } catch (e) { Toast.error(MESSAGES.saveFailed); }
+    } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   async _submitEdit(id) {
     const data = this._readForm();
-    if (!data.name) { Toast.error(MESSAGES.nameRequired); return; }
+    if (!data.name) { Toast.error(t('messages.nameRequired')); return; }
     try {
       await StudentsDB.update(id, data);
-      Toast.success(MESSAGES.studentUpdated);
+      Toast.success(t('messages.studentUpdated'));
       await this._reload();
-    } catch (e) { Toast.error(MESSAGES.saveFailed); }
+    } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   async _deleteStudent(id) {
     const student = await StudentsDB.get(id);
     if (!student) return;
     const ok = await Modal.confirm({
-      title: '구성원 삭제',
-      message: MESSAGES.deleteStudentConfirm(student.name),
+      title: t('common.delete'),
+      message: t('messages.deleteStudentConfirm', { name: student.name }),
       danger: true,
-      confirmText: '삭제',
+      confirmText: t('common.delete'),
     });
     if (!ok) return;
     try {
       await AttendanceDB.deleteByStudent(id);
       await ContractsDB.deleteByStudent(id);
       await StudentsDB.delete(id);
-      Toast.success(MESSAGES.studentDeleted);
+      Toast.success(t('messages.studentDeleted'));
       await this._reload();
-    } catch (e) { Toast.error(MESSAGES.saveFailed); }
+    } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   /** 페이지 데이터만 새로고침 (전체 라우터 이동 없이) */
@@ -679,7 +679,7 @@ export class GroupDetailPage {
     cards.forEach((el, i) => { if (vals[i] !== undefined) el.textContent = vals[i]; });
     // 부제목 업데이트
     const subtitle = document.querySelector('.page-subtitle');
-    if (subtitle) subtitle.textContent = `구성원 ${this.students.length}명 · ${formatDateKo(this.today, { monthDay: true })} 출석 현황`;
+    if (subtitle) subtitle.textContent = `${t('groupDetail.memberCount', { n: this.students.length })} · ${t('groupDetail.todayStatus', { monthDay: formatDateKo(this.today, { monthDay: true }) })}`;
     // 테이블 업데이트
     this._refreshTable();
   }
