@@ -12,6 +12,7 @@ import { PremiumService } from './services/premium.js';
 import { AdsService } from './services/ads.js';
 import { AuthService } from './services/auth.js';
 import { localHasData, migrateLocalToCloud } from './db/database.js';
+import { initLocale, getLocale } from './utils/i18n.js';
 
 // Pages
 import { LoginPage }       from './pages/login.js';
@@ -50,6 +51,10 @@ async function _initApp() {
   _appInitialized = true;
 
   try {
+  // 0. Init locale (must be first — all UI strings depend on this)
+  await initLocale();
+  document.documentElement.lang = getLocale();
+
   // 1. Load premium status
   const isPremium = await PremiumService.load();
 
@@ -79,6 +84,14 @@ async function _initApp() {
   // 5. Show app shell and start router
   _showAppShell(true);
   _router.start();
+
+  // locale change → update lang attr + re-render nav + re-render current page
+  window.addEventListener('localechange', (e) => {
+    document.documentElement.lang = e.detail?.locale || getLocale();
+    Sidebar.render();
+    BottomNav.render();
+    _router.refresh();
+  });
 
   // 6. Android 뒤로가기 버튼 처리
   _initBackButton();

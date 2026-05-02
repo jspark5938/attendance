@@ -22,6 +22,11 @@ export const BottomNav = {
     window.addEventListener('hashchange', () => this._updateActive());
   },
 
+  render() {
+    if (!this._el) return;
+    this._render();
+  },
+
   _render() {
     this._el.innerHTML = `
       <nav class="bottom-nav-inner" aria-label="하단 메뉴">

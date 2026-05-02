@@ -9,6 +9,8 @@
  *   router.start();
  */
 
+import { t } from './utils/i18n.js';
+
 export class Router {
   constructor() {
     this._routes = [];
@@ -124,8 +126,8 @@ export class Router {
           this._container.innerHTML = `
             <div class="empty-state">
               <div class="empty-state-icon">⚠</div>
-              <div class="empty-state-title">페이지를 불러올 수 없습니다</div>
-              <div class="empty-state-desc">${e.message || '알 수 없는 오류'}</div>
+              <div class="empty-state-title">${t('messages.pageLoadFailed')}</div>
+              <div class="empty-state-desc">${e.message || t('messages.unknownError')}</div>
             </div>`;
         }
       }
@@ -137,8 +139,8 @@ export class Router {
       this._container.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">🔍</div>
-          <div class="empty-state-title">페이지를 찾을 수 없습니다</div>
-          <div class="empty-state-desc"><a href="#/">홈으로 돌아가기</a></div>
+          <div class="empty-state-title">${t('messages.pageNotFound')}</div>
+          <div class="empty-state-desc"><a href="#/">${t('messages.goHome')}</a></div>
         </div>`;
     }
   }
