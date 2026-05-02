@@ -10,7 +10,7 @@ import Modal from '../components/modal.js';
 import Toast from '../components/toast.js';
 import Sidebar from '../components/sidebar.js';
 import { escapeHtml } from '../utils/dom.js';
-import { GROUP_COLORS, MESSAGES, PLACEHOLDERS } from '../utils/i18n.js';
+import { GROUP_COLORS, t } from '../utils/i18n.js';
 
 export class GroupsPage {
   constructor(params, query, router) {
@@ -24,10 +24,10 @@ export class GroupsPage {
     return `
       <div class="page-header">
         <div class="page-header-left">
-          <h1 class="page-title">그룹 관리</h1>
+          <h1 class="page-title">${t('groups.title')}</h1>
         </div>
         <div class="page-header-actions">
-          <button class="btn btn-primary" id="add-group-btn">+ 새 그룹</button>
+          <button class="btn btn-primary" id="add-group-btn">${t('groups.addGroup')}</button>
         </div>
       </div>
       <div class="page-body">
@@ -40,9 +40,9 @@ export class GroupsPage {
     return `
       <div class="empty-state">
         <div class="empty-state-icon">👥</div>
-        <div class="empty-state-title">그룹이 없습니다</div>
-        <div class="empty-state-desc">새 그룹을 만들어 학생들을 관리해 보세요.</div>
-        <button class="btn btn-primary" id="add-group-empty-btn" style="margin-top: 8px;">+ 새 그룹 만들기</button>
+        <div class="empty-state-title">${t('groups.noGroups')}</div>
+        <div class="empty-state-desc">${t('groups.noGroupsDesc')}</div>
+        <button class="btn btn-primary" id="add-group-empty-btn" style="margin-top: 8px;">${t('groups.addGroupBtn')}</button>
       </div>
     `;
   }
@@ -54,7 +54,7 @@ export class GroupsPage {
         <div class="group-card" id="add-group-card" style="border-style: dashed; display:flex; align-items:center; justify-content:center; min-height:120px; cursor:pointer; color: var(--color-text-muted);" role="button" tabindex="0">
           <div style="text-align:center;">
             <div style="font-size: 28px; margin-bottom: 8px;">+</div>
-            <div style="font-size: 14px; font-weight: 600;">새 그룹 추가</div>
+            <div style="font-size: 14px; font-weight: 600;">${t('groups.addGroupCard')}</div>
           </div>
         </div>
       </div>
@@ -68,13 +68,13 @@ export class GroupsPage {
           <span class="group-card-color-dot" style="background:${escapeHtml(g.color)}"></span>
           <span class="group-card-name">${escapeHtml(g.name)}</span>
           <div style="display:flex; gap:4px;">
-            <button class="btn btn-ghost btn-icon-sm edit-group-btn" data-id="${g.id}" title="수정" aria-label="수정">✎</button>
-            <button class="btn btn-ghost btn-icon-sm delete-group-btn" data-id="${g.id}" title="삭제" aria-label="삭제" style="color: var(--color-absent);">✕</button>
+            <button class="btn btn-ghost btn-icon-sm edit-group-btn" data-id="${g.id}" title="${t('common.edit')}" aria-label="${t('common.edit')}">✎</button>
+            <button class="btn btn-ghost btn-icon-sm delete-group-btn" data-id="${g.id}" title="${t('common.delete')}" aria-label="${t('common.delete')}" style="color: var(--color-absent);">✕</button>
           </div>
         </div>
         ${g.description ? `<div class="group-card-desc">${escapeHtml(g.description)}</div>` : ''}
         <div class="group-card-meta">
-          <span>학생 수 로딩중...</span>
+          <span>${t('groups.studentCountLoading')}</span>
         </div>
       </div>
     `;
@@ -119,16 +119,16 @@ export class GroupsPage {
       try {
         const cnt = await StudentsDB.countByGroup(id);
         const meta = card.querySelector('.group-card-meta');
-        if (meta) meta.innerHTML = `<span>학생 ${cnt}명</span>`;
+        if (meta) meta.innerHTML = `<span>${t('groups.studentCount', { n: cnt })}</span>`;
       } catch (e) { /* ignore */ }
     });
   }
 
   async _openAddModal() {
     Modal.open({
-      title: '새 그룹',
+      title: t('groups.newGroupTitle'),
       body: this._groupForm(),
-      confirmText: '만들기',
+      confirmText: t('groups.create'),
       onConfirm: () => this._submitAdd(),
     });
   }
@@ -138,9 +138,9 @@ export class GroupsPage {
     if (!group) return;
 
     Modal.open({
-      title: '그룹 수정',
+      title: t('groups.editGroupTitle'),
       body: this._groupForm(group),
-      confirmText: '저장',
+      confirmText: t('common.save'),
       onConfirm: () => this._submitEdit(id),
     });
   }
@@ -148,26 +148,26 @@ export class GroupsPage {
   _groupForm(group = null) {
     const colorSwatches = GROUP_COLORS.map(c => `
       <button type="button" class="color-swatch${group?.color === c ? ' selected' : ''}"
-        style="background:${c}" data-color="${c}" title="${c}" aria-label="색상 ${c}"></button>
+        style="background:${c}" data-color="${c}" title="${c}" aria-label="${t('groups.color')} ${c}"></button>
     `).join('');
 
     return `
       <div class="form-group">
-        <label class="form-label" for="group-name">그룹 이름 <span style="color:var(--color-absent)">*</span></label>
+        <label class="form-label" for="group-name">${t('groups.groupName')} <span style="color:var(--color-absent)">*</span></label>
         <input type="text" id="group-name" class="form-input"
-          placeholder="${PLACEHOLDERS.groupName}"
+          placeholder="${t('placeholders.groupName')}"
           value="${escapeHtml(group?.name || '')}"
           maxlength="50" autocomplete="off">
       </div>
       <div class="form-group">
-        <label class="form-label" for="group-desc">설명 <span class="form-label-optional">(선택)</span></label>
+        <label class="form-label" for="group-desc">${t('groups.groupDesc')} <span class="form-label-optional">${t('common.optional')}</span></label>
         <input type="text" id="group-desc" class="form-input"
-          placeholder="${PLACEHOLDERS.groupDesc}"
+          placeholder="${t('placeholders.groupDesc')}"
           value="${escapeHtml(group?.description || '')}"
           maxlength="100">
       </div>
       <div class="form-group">
-        <label class="form-label">색상</label>
+        <label class="form-label">${t('groups.color')}</label>
         <div class="color-picker-row" id="color-picker">
           ${colorSwatches}
         </div>
@@ -181,14 +181,14 @@ export class GroupsPage {
     const desc  = document.getElementById('group-desc')?.value?.trim();
     const color = document.getElementById('group-color')?.value || GROUP_COLORS[0];
 
-    if (!name) { Toast.error(MESSAGES.nameRequired); return; }
+    if (!name) { Toast.error(t('messages.nameRequired')); return; }
     try {
       await GroupsDB.create({ name, description: desc, color });
-      Toast.success(MESSAGES.groupCreated);
+      Toast.success(t('messages.groupCreated'));
       Sidebar.refresh();
       // Re-render page
       window.dispatchEvent(new HashChangeEvent('hashchange'));
-    } catch (e) { Toast.error(MESSAGES.saveFailed); }
+    } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   async _submitEdit(id) {
@@ -196,33 +196,33 @@ export class GroupsPage {
     const desc  = document.getElementById('group-desc')?.value?.trim();
     const color = document.getElementById('group-color')?.value;
 
-    if (!name) { Toast.error(MESSAGES.nameRequired); return; }
+    if (!name) { Toast.error(t('messages.nameRequired')); return; }
     try {
       await GroupsDB.update(id, { name, description: desc, color });
-      Toast.success(MESSAGES.groupUpdated);
+      Toast.success(t('messages.groupUpdated'));
       Sidebar.refresh();
       window.dispatchEvent(new HashChangeEvent('hashchange'));
-    } catch (e) { Toast.error(MESSAGES.saveFailed); }
+    } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   async _deleteGroup(id) {
     const group = await GroupsDB.get(id);
     if (!group) return;
     const ok = await Modal.confirm({
-      title: '그룹 삭제',
-      message: MESSAGES.deleteGroupConfirm(group.name),
+      title: t('common.delete'),
+      message: t('messages.deleteGroupConfirm', { name: group.name }),
       danger: true,
-      confirmText: '삭제',
+      confirmText: t('common.delete'),
     });
     if (!ok) return;
     try {
       await AttendanceDB.deleteByGroup(id);
       await StudentsDB.deleteByGroup(id);
       await GroupsDB.delete(id);
-      Toast.success(MESSAGES.groupDeleted);
+      Toast.success(t('messages.groupDeleted'));
       Sidebar.refresh();
       window.dispatchEvent(new HashChangeEvent('hashchange'));
-    } catch (e) { Toast.error(MESSAGES.saveFailed); }
+    } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   _on(selector, event, handler) {
