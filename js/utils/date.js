@@ -2,6 +2,8 @@
  * Date utility functions
  */
 
+import { getLocale, getMessages } from './i18n.js';
+
 /**
  * Returns today's date as YYYY-MM-DD string
  */
@@ -28,21 +30,35 @@ export function strToDate(str) {
 }
 
 /**
- * Formats a YYYY-MM-DD string to Korean display format
- * e.g. "2024-03-15" → "2024년 3월 15일 (금)"
+ * Formats a YYYY-MM-DD string using the current locale.
+ * options.short     → short format (e.g. "3/15(금)" or "3/15(Fri)")
+ * options.monthDay  → month+day format
  */
-export function formatDateKo(str, options = {}) {
+export function formatDate(str, options = {}) {
   const date = strToDate(str);
-  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-  const dayName = dayNames[date.getDay()];
+  const msgs = getMessages();
+  const locale = getLocale();
+  const dow = msgs.date.daysShort[date.getDay()];
+  const y = date.getFullYear();
+  const mo = date.getMonth();
+  const d = date.getDate();
+  const monthDisplay = locale === 'ko' ? (mo + 1) : msgs.date.months[mo];
 
-  if (options.short) {
-    return `${date.getMonth() + 1}/${date.getDate()}(${dayName})`;
-  }
-  if (options.monthDay) {
-    return `${date.getMonth() + 1}월 ${date.getDate()}일 (${dayName})`;
-  }
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 (${dayName})`;
+  let template;
+  if (options.short)         template = msgs.date.short;
+  else if (options.monthDay) template = msgs.date.monthDay;
+  else                       template = msgs.date.full;
+
+  return template
+    .replace('{year}',  y)
+    .replace('{month}', monthDisplay)
+    .replace('{day}',   d)
+    .replace('{dow}',   dow);
+}
+
+/** Alias for backward compatibility */
+export function formatDateKo(str, options = {}) {
+  return formatDate(str, options);
 }
 
 /**
@@ -100,22 +116,34 @@ export function shiftMonth(yearMonthStr, months) {
 }
 
 /**
- * Formats YYYY-MM string to Korean: "2024년 3월"
+ * Formats YYYY-MM string using current locale.
+ * e.g. "2024-03" → "2024년 3월" (ko) or "March 2024" (en)
  */
-export function formatYearMonthKo(yearMonthStr) {
+export function formatYearMonth(yearMonthStr) {
+  const msgs = getMessages();
+  const locale = getLocale();
   const [y, m] = yearMonthStr.split('-').map(Number);
-  return `${y}년 ${m}월`;
+  const monthDisplay = locale === 'ko' ? m : msgs.date.months[m - 1];
+  return msgs.date.yearMonth
+    .replace('{year}',  y)
+    .replace('{month}', monthDisplay);
+}
+
+/** Alias for backward compatibility */
+export function formatYearMonthKo(yearMonthStr) {
+  return formatYearMonth(yearMonthStr);
 }
 
 /**
- * Returns relative label for a date string: "오늘", "어제", or formatted date
+ * Returns relative label: "오늘"/"Today", "어제"/"Yesterday", or short formatted date
  */
 export function relativeDateLabel(dateStr) {
+  const msgs = getMessages();
   const today = todayStr();
   const yesterday = shiftDate(today, -1);
-  if (dateStr === today) return '오늘';
-  if (dateStr === yesterday) return '어제';
-  return formatDateKo(dateStr, { short: true });
+  if (dateStr === today)     return msgs.date.today;
+  if (dateStr === yesterday) return msgs.date.yesterday;
+  return formatDate(dateStr, { short: true });
 }
 
 /**
