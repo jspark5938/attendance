@@ -11,7 +11,7 @@ import Modal from '../components/modal.js';
 import Toast from '../components/toast.js';
 import { escapeHtml } from '../utils/dom.js';
 import { todayStr, shiftDate, formatDateKo, isFuture, daysToNextClass } from '../utils/date.js';
-import { STATUS_LABELS, STATUS_LIST, MESSAGES } from '../utils/i18n.js';
+import { STATUS_LIST, t } from '../utils/i18n.js';
 
 export class AttendancePage {
   constructor(params, query) {
@@ -29,7 +29,7 @@ export class AttendancePage {
     if (!this.group) {
       return `<div class="page-body"><div class="empty-state">
         <div class="empty-state-icon">⚠</div>
-        <div class="empty-state-title">그룹을 찾을 수 없습니다</div>
+        <div class="empty-state-title">${t('common.groupNotFound')}</div>
       </div></div>`;
     }
 
@@ -49,18 +49,18 @@ export class AttendancePage {
     return `
       <div class="page-header">
         <div class="page-header-left">
-          <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="뒤로" style="font-size:20px;">←</a>
+          <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="${t('common.back')}" style="font-size:20px;">←</a>
           <div>
-            <h1 class="page-title">${escapeHtml(this.group.name)} — 출석 체크</h1>
+            <h1 class="page-title">${escapeHtml(this.group.name)} — ${t('attendance.title')}</h1>
             <div class="page-subtitle">${formatDateKo(this.date)}</div>
           </div>
         </div>
         <div class="page-header-actions">
           <!-- Date navigator -->
           <div class="date-nav">
-            <button class="date-nav-btn" id="prev-date" aria-label="이전날">←</button>
-            <button class="date-nav-label" id="date-picker-trigger" title="날짜 선택">${formatDateKo(this.date, { short: true })}</button>
-            <button class="date-nav-btn" id="next-date" aria-label="다음날">→</button>
+            <button class="date-nav-btn" id="prev-date" aria-label="${t('attendance.prevDay')}">←</button>
+            <button class="date-nav-label" id="date-picker-trigger" title="${t('attendance.pickDate')}">${formatDateKo(this.date, { short: true })}</button>
+            <button class="date-nav-btn" id="next-date" aria-label="${t('attendance.nextDay')}">→</button>
           </div>
         </div>
       </div>
@@ -68,28 +68,28 @@ export class AttendancePage {
       <div class="page-body">
         <!-- Summary bar -->
         <div class="stat-cards-grid" style="margin-bottom: var(--space-5);">
-          ${this._summaryCard('출석', summary.present, 'var(--color-present)')}
-          ${this._summaryCard('결석', summary.absent, 'var(--color-absent)')}
-          ${this._summaryCard('지각', summary.late, 'var(--color-late)')}
-          ${this._summaryCard('조퇴', summary.early, 'var(--color-early)')}
+          ${this._summaryCard(t('status.present'), summary.present, 'var(--color-present)')}
+          ${this._summaryCard(t('status.absent'), summary.absent, 'var(--color-absent)')}
+          ${this._summaryCard(t('status.late'), summary.late, 'var(--color-late)')}
+          ${this._summaryCard(t('status.early'), summary.early, 'var(--color-early)')}
         </div>
 
         <!-- Quick mark bar -->
         <div class="quick-mark-bar" style="margin-bottom: var(--space-3);">
-          <span class="quick-mark-label">전체:</span>
+          <span class="quick-mark-label">${t('attendance.allStudents')}</span>
           ${STATUS_LIST.map(s => `
             <button class="btn btn-sm btn-secondary quick-all-btn" data-status="${s}">
-              모두 ${STATUS_LABELS[s]}
+              ${t('attendance.markAll', { status: t('status.' + s) })}
             </button>
           `).join('')}
-          <button class="btn btn-sm btn-ghost" id="clear-all-btn" style="margin-left:auto; color:var(--color-absent);">초기화</button>
+          <button class="btn btn-sm btn-ghost" id="clear-all-btn" style="margin-left:auto; color:var(--color-absent);">${t('attendance.clearAll')}</button>
         </div>
         ${hasGroups ? `
         <div class="quick-mark-bar">
           <span class="quick-mark-label" style="color:var(--color-present);">예정만:</span>
           ${STATUS_LIST.map(s => `
             <button class="btn btn-sm btn-secondary quick-scheduled-btn" data-status="${s}">
-              예정 ${STATUS_LABELS[s]}
+              ${t('attendance.markSched', { status: t('status.' + s) })}
             </button>
           `).join('')}
         </div>` : ''}
@@ -97,7 +97,7 @@ export class AttendancePage {
         <!-- Student cards -->
         <div id="student-attendance-list" style="display:flex; flex-direction:column; gap: var(--space-2); margin-top: var(--space-3);">
           ${this.students.length === 0
-            ? `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">학생이 없습니다</div><div class="empty-state-desc"><a href="#/groups/${this.groupId}">학생 추가하기</a></div></div>`
+            ? `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">${t('attendance.noStudents')}</div><div class="empty-state-desc"><a href="#/groups/${this.groupId}">${t('attendance.addStudents')}</a></div></div>`
             : this._renderGroupedList()
           }
         </div>
@@ -115,12 +115,12 @@ export class AttendancePage {
     }
 
     const scheduledHtml = this._scheduled.length > 0 ? `
-      ${this._sectionHeader('오늘 출석 예정', this._scheduled.length, 'var(--color-present)')}
+      ${this._sectionHeader(t('attendance.scheduled'), this._scheduled.length, 'var(--color-present)')}
       ${this._scheduled.map(s => this._studentCard(s)).join('')}
     ` : '';
 
     const unscheduledHtml = `
-      ${this._sectionHeader('출석 비예정', this._unscheduled.length, 'var(--color-text-muted)')}
+      ${this._sectionHeader(t('attendance.unscheduled'), this._unscheduled.length, 'var(--color-text-muted)')}
       ${this._unscheduled.map(s => this._studentCard(s, true)).join('')}
     `;
 
@@ -131,7 +131,7 @@ export class AttendancePage {
     return `
       <div style="display:flex; align-items:center; gap:var(--space-2); padding: var(--space-2) 0; margin-top: var(--space-2);">
         <span style="font-size:12px; font-weight:700; color:${color}; text-transform:uppercase; letter-spacing:.04em;">${label}</span>
-        <span style="font-size:11px; font-weight:600; color:white; background:${color}; border-radius:10px; padding:1px 7px;">${count}명</span>
+        <span style="font-size:11px; font-weight:600; color:white; background:${color}; border-radius:10px; padding:1px 7px;">${t('attendance.count', { n: count })}</span>
         <div style="flex:1; height:1px; background:var(--color-border-light);"></div>
       </div>
     `;
@@ -165,8 +165,8 @@ export class AttendancePage {
               data-status="${s}"
               data-student-id="${student.id}"
               aria-pressed="${activeStatus === s ? 'true' : 'false'}"
-              aria-label="${STATUS_LABELS[s]}">
-              ${STATUS_LABELS[s]}
+              aria-label="${t('status.' + s)}">
+              ${t('status.' + s)}
             </button>
           `).join('')}
         </div>
@@ -299,7 +299,7 @@ export class AttendancePage {
       }
       this._updateSummary();
     } catch (e) {
-      Toast.error(MESSAGES.saveFailed);
+      Toast.error(t('messages.saveFailed'));
     } finally {
       this._saving.delete(studentId);
     }
@@ -323,7 +323,7 @@ export class AttendancePage {
         btn.setAttribute('aria-pressed', btn.dataset.status === status ? 'true' : 'false');
       });
       this._updateSummary();
-    } catch (e) { Toast.error(MESSAGES.saveFailed); }
+    } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   async _markScheduled(status) {
@@ -342,13 +342,13 @@ export class AttendancePage {
         });
       });
       this._updateSummary();
-    } catch (e) { Toast.error(MESSAGES.saveFailed); }
+    } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   async _clearAll() {
     const ok = await Modal.confirm({
       title: '출석 초기화',
-      message: MESSAGES.clearAttendanceConfirm,
+      message: t('messages.clearAttendanceConfirm'),
       danger: true,
       confirmText: '초기화',
     });
@@ -369,7 +369,7 @@ export class AttendancePage {
         btn.setAttribute('aria-pressed', 'false');
       });
       this._updateSummary();
-    } catch (e) { Toast.error(MESSAGES.saveFailed); }
+    } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   _updateSummary() {
@@ -517,7 +517,7 @@ export class AttendancePage {
       };
       Toast.success(`${escapeHtml(student.name)} — ${labels[absentType] || '결석'} 처리 완료`);
     } catch (e) {
-      Toast.error(MESSAGES.saveFailed);
+      Toast.error(t('messages.saveFailed'));
     } finally {
       this._saving.delete(student.id);
     }
