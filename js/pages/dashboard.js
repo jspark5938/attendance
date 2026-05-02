@@ -9,7 +9,7 @@ import { ContractsDB } from '../db/contracts.js';
 import { getAll, getByKey } from '../db/database.js';
 import { escapeHtml } from '../utils/dom.js';
 import { todayStr, formatDateKo, shiftDate } from '../utils/date.js';
-import { STATUS_LABELS } from '../utils/i18n.js';
+import { t } from '../utils/i18n.js';
 
 export class DashboardPage {
   constructor() {
@@ -42,7 +42,7 @@ export class DashboardPage {
       <div class="page-header">
         <div class="page-header-left">
           <div>
-            <h1 class="page-title">대시보드</h1>
+            <h1 class="page-title">${t('dashboard.title')}</h1>
             <div class="page-subtitle">${formatDateKo(this.today)}</div>
           </div>
         </div>
@@ -54,22 +54,22 @@ export class DashboardPage {
         <!-- Overall stats -->
         <div class="stat-cards-grid" style="margin-bottom: var(--space-5);">
           <div class="stat-card">
-            <div class="stat-card-label">전체 그룹</div>
+            <div class="stat-card-label">${t('dashboard.totalGroups')}</div>
             <div class="stat-card-value">${groups.length}</div>
             <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:100%;"></div></div>
           </div>
           <div class="stat-card">
-            <div class="stat-card-label">전체 학생</div>
+            <div class="stat-card-label">${t('dashboard.totalStudents')}</div>
             <div class="stat-card-value">${totalStudents}</div>
             <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:100%;"></div></div>
           </div>
           <div class="stat-card">
-            <div class="stat-card-label">오늘 출석</div>
+            <div class="stat-card-label">${t('dashboard.todayPresent')}</div>
             <div class="stat-card-value" style="color:var(--color-present)">${totalPresent}</div>
             <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:${totalStudents > 0 ? Math.round(totalPresent/totalStudents*100) : 0}%;background:var(--color-present);"></div></div>
           </div>
           <div class="stat-card">
-            <div class="stat-card-label">오늘 결석</div>
+            <div class="stat-card-label">${t('dashboard.todayAbsent')}</div>
             <div class="stat-card-value" style="color:var(--color-absent)">${totalAbsent}</div>
             <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:${totalStudents > 0 ? Math.round(totalAbsent/totalStudents*100) : 0}%;background:var(--color-absent);"></div></div>
           </div>
@@ -83,8 +83,8 @@ export class DashboardPage {
         ${groups.length > 0 ? `
           <div class="card" style="margin-bottom: var(--space-5);">
             <div class="card-header">
-              <div class="card-title">오늘 그룹별 현황</div>
-              <a href="#/groups" class="btn btn-ghost btn-sm" style="font-size:12px;">전체 관리 →</a>
+              <div class="card-title">${t('dashboard.todayStatus')}</div>
+              <a href="#/groups" class="btn btn-ghost btn-sm" style="font-size:12px;">${t('dashboard.manageAll')}</a>
             </div>
             <div>
               ${groupStats.map(gs => this._groupRow(gs)).join('')}
@@ -151,14 +151,14 @@ export class DashboardPage {
   _expiringCard(list) {
     const rows = list.map(({ student, group, contract, type, daysLeft, remaining }) => {
       const typeBadge = type === 'period'
-        ? `<span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:4px; background:var(--color-primary-light); color:var(--color-primary);">기간제</span>`
-        : `<span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:4px; background:#fef3c7; color:#92400e;">횟수제</span>`;
+        ? `<span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:4px; background:var(--color-primary-light); color:var(--color-primary);">${t('dashboard.periodBadge')}</span>`
+        : `<span style="font-size:11px; font-weight:600; padding:2px 6px; border-radius:4px; background:#fef3c7; color:#92400e;">${t('dashboard.countBadge')}</span>`;
       const statusColor = type === 'period'
         ? (daysLeft <= 3 ? 'var(--color-absent)' : 'var(--color-late)')
         : (remaining <= 0 ? 'var(--color-absent)' : 'var(--color-late)');
       const statusText = type === 'period'
-        ? (daysLeft === 0 ? '오늘 종료' : `${daysLeft}일 남음`)
-        : (remaining <= 0 ? '소진' : `잔여 ${remaining}회`);
+        ? (daysLeft === 0 ? t('dashboard.endsToday') : t('dashboard.daysLeft', { n: daysLeft }))
+        : (remaining <= 0 ? t('dashboard.exhausted') : t('dashboard.remaining', { n: remaining }));
 
       return `
         <div class="list-item">
@@ -169,17 +169,17 @@ export class DashboardPage {
           </div>
           ${typeBadge}
           <div style="font-size:13px; font-weight:700; color:${statusColor}; flex-shrink:0;">${statusText}</div>
-          <a href="#/groups/${group.id}" class="btn btn-ghost btn-sm" style="flex-shrink:0; font-size:12px;">관리 →</a>
+          <a href="#/groups/${group.id}" class="btn btn-ghost btn-sm" style="flex-shrink:0; font-size:12px;">${t('dashboard.manage')}</a>
         </div>`;
     }).join('');
 
     return `
       <div class="card" style="margin-bottom: var(--space-5); border: 1.5px solid var(--color-late);">
         <div class="card-header">
-          <div class="card-title" style="color:var(--color-late);">⚠ 계약 종료 예정
+          <div class="card-title" style="color:var(--color-late);">${t('dashboard.contractExpiry')}
             <span style="font-size:12px; font-weight:600; background:var(--color-late); color:white; border-radius:10px; padding:1px 8px; margin-left:6px;">${list.length}</span>
           </div>
-          <a href="#/settings" class="btn btn-ghost btn-sm" style="font-size:12px;">기준 설정 →</a>
+          <a href="#/settings" class="btn btn-ghost btn-sm" style="font-size:12px;">${t('dashboard.criteriaSettings')}</a>
         </div>
         <div>${rows}</div>
       </div>`;
@@ -189,9 +189,9 @@ export class DashboardPage {
     return `
       <div class="empty-state" style="padding: var(--space-10) var(--space-6);">
         <div class="empty-state-icon">👋</div>
-        <div class="empty-state-title">환영합니다!</div>
-        <div class="empty-state-desc">그룹을 만들어 출석을 시작해 보세요.</div>
-        <a href="#/groups" class="btn btn-primary" style="margin-top: 12px;">+ 첫 그룹 만들기</a>
+        <div class="empty-state-title">${t('dashboard.welcome')}</div>
+        <div class="empty-state-desc">${t('dashboard.welcomeDesc')}</div>
+        <a href="#/groups" class="btn btn-primary" style="margin-top: 12px;">${t('dashboard.firstGroup')}</a>
       </div>
     `;
   }
@@ -206,23 +206,23 @@ export class DashboardPage {
           <div class="att-summary">
             <span class="att-summary-item">
               <span class="att-summary-dot" style="background:var(--color-present)"></span>
-              출석 ${present}
+              ${t('dashboard.present')} ${present}
             </span>
             <span class="att-summary-item">
               <span class="att-summary-dot" style="background:var(--color-absent)"></span>
-              결석 ${absent}
+              ${t('dashboard.absent')} ${absent}
             </span>
             ${none > 0 ? `<span class="att-summary-item">
               <span class="att-summary-dot" style="background:var(--color-text-muted)"></span>
-              미입력 ${none}
+              ${t('dashboard.notEntered')} ${none}
             </span>` : ''}
           </div>
         </div>
         <div style="text-align:right; flex-shrink:0;">
           <div style="font-size: 18px; font-weight: 700; color: var(--color-present);">${rate}%</div>
-          <div style="font-size: 12px; color: var(--color-text-muted);">${students}명</div>
+          <div style="font-size: 12px; color: var(--color-text-muted);">${t('dashboard.studentCount', { n: students })}</div>
         </div>
-        <a href="#/groups/${group.id}/attend" class="btn btn-primary btn-sm" style="flex-shrink:0;">출석 체크</a>
+        <a href="#/groups/${group.id}/attend" class="btn btn-primary btn-sm" style="flex-shrink:0;">${t('dashboard.attendCheck')}</a>
       </div>
     `;
   }
