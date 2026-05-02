@@ -102,15 +102,19 @@ export const FREE_LIMITS = { groups: 1, students: 20 };
 
 export const PREMIUM_PRICE = '₩9,900';
 
+// Keys that were originally functions taking a name parameter
+const _MSG_FUNCTION_KEYS = new Set(['deleteGroupConfirm', 'deleteStudentConfirm']);
+
 /** @deprecated Use t('messages.*') directly */
 export const MESSAGES = new Proxy({}, {
   get(_, key) {
     const skey = String(key);
-    // Support legacy function-call pattern: MESSAGES.deleteGroupConfirm(name)
-    return (param) => {
-      if (param !== undefined) return t('messages.' + skey, { name: param });
-      return t('messages.' + skey);
-    };
+    if (_MSG_FUNCTION_KEYS.has(skey)) {
+      // Legacy: MESSAGES.deleteGroupConfirm(name) → interpolated string
+      return (name) => t('messages.' + skey, { name });
+    }
+    // Legacy: MESSAGES.saveFailed → plain string
+    return t('messages.' + skey);
   },
 });
 
