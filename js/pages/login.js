@@ -1,5 +1,6 @@
 import { AuthService } from '../services/auth.js';
 import Toast from '../components/toast.js';
+import { t } from '../utils/i18n.js';
 
 const GOOGLE_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -23,31 +24,31 @@ export class LoginPage {
           <div class="login-brand">
             <div class="login-logo">출</div>
             <h1 class="login-title">출석부</h1>
-            <p class="login-subtitle">학생 출결을 쉽고 빠르게 관리하세요</p>
+            <p class="login-subtitle">${t('login.subtitle')}</p>
           </div>
 
           <!-- Card -->
           <div class="login-card">
             <button id="google-signin-btn" class="login-btn-google">
               ${GOOGLE_SVG}
-              <span>Google로 로그인</span>
+              <span>${t('login.googleSignIn')}</span>
             </button>
 
             <div class="login-divider">
               <span class="login-divider-line"></span>
-              <span class="login-divider-text">또는</span>
+              <span class="login-divider-text">${t('login.or')}</span>
               <span class="login-divider-line"></span>
             </div>
 
             <button id="guest-mode-btn" class="login-btn-guest">
-              로그인 없이 사용하기
+              ${t('login.guestMode')}
             </button>
 
             <div class="login-legal">
-              <p>계속 진행하면 출석부의
-                <a href="#" class="login-legal-link" id="terms-link">이용약관</a> 및
-                <a href="#" class="login-legal-link" id="privacy-link">개인정보처리방침</a>에 동의하게 됩니다.
-              </p>
+              <p>${t('login.termsText', {
+                terms:   `<a href="#" class="login-legal-link" id="terms-link">${t('login.terms')}</a>`,
+                privacy: `<a href="#" class="login-legal-link" id="privacy-link">${t('login.privacy')}</a>`,
+              })}</p>
             </div>
           </div>
         </div>
@@ -92,7 +93,7 @@ export class LoginPage {
 
     googleBtn?.addEventListener('click', async () => {
       googleBtn.disabled = true;
-      googleBtn.innerHTML = `<span style="display:inline-block;width:18px;height:18px;border:2px solid #f5d5c3;border-top-color:#D97757;border-radius:50%;animation:spin .7s linear infinite;"></span><span>로그인 중...</span>`;
+      googleBtn.innerHTML = `<span style="display:inline-block;width:18px;height:18px;border:2px solid #f5d5c3;border-top-color:#D97757;border-radius:50%;animation:spin .7s linear infinite;"></span><span>${t('login.signingIn')}</span>`;
 
       // window.open을 잠시 가로채서 팝업 참조 확보
       const _origOpen = window.open.bind(window);
@@ -110,10 +111,10 @@ export class LoginPage {
         const silent = e.code === 'auth/popup-closed-by-user' ||
                        e.code === 'auth/cancelled-popup-request';
         if (!silent) {
-          Toast.error('로그인에 실패했습니다: ' + (e.message || e.code || ''));
+          Toast.error(t('messages.loginFailed', { msg: e.message || e.code || '' }));
         }
         googleBtn.disabled = false;
-        googleBtn.innerHTML = `${GOOGLE_SVG}<span>Google로 로그인</span>`;
+        googleBtn.innerHTML = `${GOOGLE_SVG}<span>${t('login.googleSignIn')}</span>`;
       } finally {
         window.open = _origOpen;
         _signinPopup = null;
