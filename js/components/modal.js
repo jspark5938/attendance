@@ -39,6 +39,7 @@ const Modal = {
     confirmText = confirmText ?? t('modal.confirm');
     cancelText  = cancelText  ?? t('modal.cancel');
     const backdrop = this._getBackdrop();
+    backdrop?.querySelector('.modal-close')?.setAttribute('aria-label', t('common.close'));
     if (!backdrop) return;
 
     // 이전 닫기 애니메이션 타이머가 남아있으면 취소

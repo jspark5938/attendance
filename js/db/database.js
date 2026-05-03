@@ -1,5 +1,6 @@
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
 import { db, auth } from '../services/firebase.js';
+import { t } from '../utils/i18n.js';
 import {
   localGetAll, localGetByKey, localGetAllByIndex,
   localPut, localDel, localCount, localCountByIndex,
@@ -11,7 +12,7 @@ function isLocalMode() { return !auth.currentUser; }
 
 function uid() {
   const u = auth.currentUser;
-  if (!u) throw new Error('로그인이 필요합니다.');
+  if (!u) throw new Error(t('messages.loginRequired'));
   return u.uid;
 }
 
@@ -107,7 +108,7 @@ export async function exportAllData() {
 
 export async function importAllData(data) {
   if (!data?.groups || !data?.students || !data?.attendance) {
-    throw new Error('올바르지 않은 백업 파일입니다.');
+    throw new Error(t('messages.invalidBackup'));
   }
   if (isLocalMode()) { localImportData(data); return; }
   const u = uid();

@@ -4,22 +4,21 @@
 
 import { AttendanceDB } from '../db/attendance.js';
 import { StudentsDB } from '../db/students.js';
-import { STATUS_LABELS } from '../utils/i18n.js';
+import { STATUS_LABELS, t } from '../utils/i18n.js';
 
 export const ExportService = {
   /**
    * Export attendance as CSV for a group and date range.
-   * Columns: 번호, 이름, date1, date2, ...
+   * Columns: 번호/# , 이름/Name, date1, date2, ...
    * Adds BOM for Korean Excel compatibility.
    */
   async exportCSV(group, startDate, endDate) {
     const students = await StudentsDB.getByGroup(group.id);
     const recordMap = await AttendanceDB.getByGroupDateRange(group.id, startDate, endDate);
 
-    // Determine all dates in range that have records OR are in the range
     const allDates = _dateRange(startDate, endDate);
 
-    const headers = ['번호', '이름', ...allDates];
+    const headers = [t('export.headerNumber'), t('export.headerName'), ...allDates];
     const rows = students.map(s => [
       s.number,
       s.name,
@@ -33,9 +32,10 @@ export const ExportService = {
       .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
       .join('\r\n');
 
-    const BOM = '\uFEFF'; // UTF-8 BOM for Korean Excel
+    const BOM = '\uFEFF'; // UTF-8 BOM for Excel compatibility
     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-    _download(blob, `출석부_${group.name}_${startDate}_${endDate}.csv`);
+    const filename = t('export.csvFilename', { name: group.name, start: startDate, end: endDate }) + '.csv';
+    _download(blob, filename);
   },
 
   /**
@@ -44,7 +44,7 @@ export const ExportService = {
    */
   async exportPDF(group, startDate, endDate) {
     if (!window.jspdf?.jsPDF) {
-      throw new Error('PDF 라이브러리가 로드되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+      throw new Error(t('export.pdfLibError'));
     }
 
     const students = await StudentsDB.getByGroup(group.id);
@@ -58,17 +58,28 @@ export const ExportService = {
       format: 'a4',
     });
 
-    // Title (note: jsPDF doesn't support Korean without a custom font;
-    // fall back to romanization or embed font separately)
     doc.setFontSize(14);
-    doc.text(`${group.name} - 출석부`, 14, 18);
+    doc.text(`${group.name} - ${t('export.pdfTitle')}`, 14, 18);
     doc.setFontSize(10);
-    doc.text(`기간: ${startDate} ~ ${endDate}`, 14, 26);
+    doc.text(t('export.pdfPeriod', { start: startDate, end: endDate }), 14, 26);
 
-    // Status → short label for PDF
-    const shortLabel = { present: '출', absent: '결', late: '지', early: '조' };
+    // Status → short label for PDF cells
+    const shortLabel = {
+      present: t('export.statusShortPresent'),
+      absent:  t('export.statusShortAbsent'),
+      late:    t('export.statusShortLate'),
+      early:   t('export.statusShortEarly'),
+    };
 
-    const head = [['번호', '이름', ...allDates.map(d => d.slice(5))]]; // MM-DD
+    // Cell background colors keyed by locale-aware short label
+    const STATUS_BG = {
+      [shortLabel.present]: [209, 250, 229], // green
+      [shortLabel.absent]:  [254, 226, 226], // red
+      [shortLabel.late]:    [254, 243, 199], // amber
+      [shortLabel.early]:   [237, 233, 254], // purple
+    };
+
+    const head = [[t('export.headerNumber'), t('export.headerName'), ...allDates.map(d => d.slice(5))]]; // MM-DD
     const body = students.map(s => [
       s.number,
       s.name,
@@ -77,14 +88,6 @@ export const ExportService = {
         return rec ? shortLabel[rec.status] : '';
       }),
     ]);
-
-    // Status cell colors
-    const STATUS_BG = {
-      '출': [209, 250, 229], // green
-      '결': [254, 226, 226], // red
-      '지': [254, 243, 199], // amber
-      '조': [237, 233, 254], // purple
-    };
 
     doc.autoTable({
       head,
@@ -111,7 +114,8 @@ export const ExportService = {
       },
     });
 
-    doc.save(`출석부_${group.name}_${startDate}_${endDate}.pdf`);
+    const filename = t('export.pdfFilename', { name: group.name, start: startDate, end: endDate }) + '.pdf';
+    doc.save(filename);
   },
 };
 
