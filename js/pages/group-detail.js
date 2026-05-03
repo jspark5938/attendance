@@ -900,32 +900,32 @@ export class GroupDetailPage {
           <input type="text" id="cf-memo" class="form-input" value="${escapeHtml(contract?.memo || '')}" placeholder="예: 3개월 등록" maxlength="100">
         </div>
       `,
-      confirmText: isEdit ? '저장' : '추가',
-      cancelText: '뒤로',
+      confirmText: isEdit ? t('common.save') : t('common.add'),
+      cancelText: t('common.back'),
       onConfirm: async () => {
-        const t = document.getElementById('cf-type')?.value || 'period';
+        const contractType = document.getElementById('cf-type')?.value || 'period';
         const startDate  = document.getElementById('cf-start')?.value;
         const endDate    = document.getElementById('cf-end')?.value || '';
         const totalCount = document.getElementById('cf-total')?.value ? Number(document.getElementById('cf-total').value) : null;
         const memo       = document.getElementById('cf-memo')?.value?.trim() || '';
 
-        if (t === 'period' && !endDate)    { Toast.error('종료일을 입력하세요.'); return; }
-        if (t === 'count' && !totalCount)  { Toast.error('총 횟수를 입력하세요.'); return; }
+        if (contractType === 'period' && !endDate)    { Toast.error(t('messages.nameRequired')); return; }
+        if (contractType === 'count' && !totalCount)  { Toast.error(t('messages.nameRequired')); return; }
 
         try {
           if (isEdit) {
-            await ContractsDB.update(contract.id, { type: t, startDate, endDate, totalCount, memo });
+            await ContractsDB.update(contract.id, { type: contractType, startDate, endDate, totalCount, memo });
           } else {
             // End any existing active contract first
             const existing = await ContractsDB.getByStudent(student.id);
             for (const c of existing) {
               if (c.status === 'active') await ContractsDB.end(c.id);
             }
-            await ContractsDB.create({ studentId: student.id, groupId: this.groupId, type: t, startDate, endDate, totalCount, memo });
+            await ContractsDB.create({ studentId: student.id, groupId: this.groupId, type: contractType, startDate, endDate, totalCount, memo });
           }
           await this._loadContractStatus();
           onBack();
-        } catch (e) { Toast.error('저장 실패: ' + e.message); }
+        } catch (e) { Toast.error(t('messages.saveFailed')); }
       },
     });
 
@@ -941,16 +941,16 @@ export class GroupDetailPage {
       // Type toggle
       document.querySelectorAll('.contract-type-btn2').forEach(btn => {
         btn.addEventListener('click', () => {
-          const t = btn.dataset.type;
-          document.getElementById('cf-type').value = t;
+          const contractType = btn.dataset.type;
+          document.getElementById('cf-type').value = contractType;
           document.querySelectorAll('.contract-type-btn2').forEach(b => {
-            const active = b.dataset.type === t;
+            const active = b.dataset.type === contractType;
             b.style.background  = active ? 'var(--color-primary)' : 'transparent';
             b.style.color       = active ? 'white' : 'var(--color-text-muted)';
             b.style.borderColor = active ? 'var(--color-primary)' : 'var(--color-border)';
           });
-          document.getElementById('cf-period-fields').style.display = t === 'period' ? 'block' : 'none';
-          document.getElementById('cf-count-fields').style.display  = t === 'count'  ? 'block' : 'none';
+          document.getElementById('cf-period-fields').style.display = contractType === 'period' ? 'block' : 'none';
+          document.getElementById('cf-count-fields').style.display  = contractType === 'count'  ? 'block' : 'none';
         });
       });
     }, 50);
