@@ -12,7 +12,7 @@ import { PremiumService } from './services/premium.js';
 import { AdsService } from './services/ads.js';
 import { AuthService } from './services/auth.js';
 import { localHasData, migrateLocalToCloud } from './db/database.js';
-import { initLocale, getLocale } from './utils/i18n.js';
+import { initLocale, getLocale, t } from './utils/i18n.js';
 
 // Pages
 import { LoginPage }       from './pages/login.js';
@@ -132,7 +132,7 @@ function _initBackButton() {
         cap.Plugins.App.exitApp();
       } else {
         _lastBackPress = now;
-        Toast.show('한 번 더 누르면 종료됩니다.', 'info', 2000);
+        Toast.show(t('messages.pressExitAgain'), 'info', 2000);
       }
     } else if (TOP_LEVEL.has(path)) {
       // 최상위 탭: 홈으로 이동
@@ -148,16 +148,16 @@ function _initBackButton() {
 async function _offerMigration() {
   if (!localHasData()) return;
   const ok = await Modal.confirm({
-    title: '로컬 데이터 백업',
-    message: '로그인 없이 저장된 데이터가 있습니다.\n지금 클라우드에 백업하시겠습니까?\n(취소하면 기존 데이터는 로컬에 남습니다)',
-    confirmText: '백업하기',
+    title: t('messages.migrationTitle'),
+    message: t('messages.migrationMsg'),
+    confirmText: t('messages.migrationConfirm'),
   });
   if (!ok) return;
   try {
     await migrateLocalToCloud();
-    Toast.success('데이터를 클라우드에 백업했습니다.');
+    Toast.success(t('messages.migrationSuccess'));
   } catch (e) {
-    Toast.error('백업 실패: ' + e.message);
+    Toast.error(t('messages.migrationFailed', { msg: e.message }));
   }
 }
 

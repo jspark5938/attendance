@@ -107,7 +107,8 @@ const Modal = {
   /**
    * Simple confirm dialog. Returns Promise<boolean>.
    */
-  confirm({ title, message, danger = false, confirmText = '확인' }) {
+  confirm({ title, message, danger = false, confirmText } = {}) {
+    confirmText = confirmText ?? t('modal.confirm');
     return new Promise((resolve) => {
       this.open({
         title,

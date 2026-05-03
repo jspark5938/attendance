@@ -6,10 +6,11 @@
 
 import { GroupsDB } from '../db/groups.js';
 import { escapeHtml } from '../utils/dom.js';
+import { t } from '../utils/i18n.js';
 
 const MODE_CONFIG = {
-  calendar: { label: '달력', icon: '📅', hash: (id) => `#/groups/${id}/calendar` },
-  stats:    { label: '통계', icon: '📊', hash: (id) => `#/groups/${id}/stats` },
+  calendar: { labelKey: 'nav.calendar', icon: '📅', hash: (id) => `#/groups/${id}/calendar` },
+  stats:    { labelKey: 'nav.stats',    icon: '📊', hash: (id) => `#/groups/${id}/stats` },
 };
 
 export class GroupPickerPage {
@@ -20,7 +21,8 @@ export class GroupPickerPage {
 
   async render() {
     const groups = await GroupsDB.getAll();
-    const { label, icon } = this.config;
+    const { labelKey, icon } = this.config;
+    const label = t(labelKey);
 
     return `
       <div class="page-header">
@@ -32,13 +34,13 @@ export class GroupPickerPage {
         ${groups.length === 0 ? `
           <div class="empty-state">
             <div class="empty-state-icon">${icon}</div>
-            <div class="empty-state-title">그룹이 없습니다</div>
-            <div class="empty-state-desc">${label}을 보려면 먼저 그룹을 만들어 주세요.</div>
-            <a href="#/groups" class="btn btn-primary" style="margin-top:12px;">+ 그룹 만들기</a>
+            <div class="empty-state-title">${t('groupPicker.noGroups')}</div>
+            <div class="empty-state-desc">${t('groupPicker.noGroupsDesc', { label })}</div>
+            <a href="#/groups" class="btn btn-primary" style="margin-top:12px;">${t('groupPicker.addGroup')}</a>
           </div>
         ` : `
           <div style="margin-bottom: var(--space-4); font-size: var(--font-size-sm); color: var(--color-text-muted);">
-            ${label}을 볼 그룹을 선택하세요.
+            ${t('groupPicker.selectGroup', { label })}
           </div>
           <div class="grid-2">
             ${groups.map(g => `

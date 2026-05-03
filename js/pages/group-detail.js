@@ -12,7 +12,7 @@ import Modal from '../components/modal.js';
 import Toast from '../components/toast.js';
 import { escapeHtml } from '../utils/dom.js';
 import { todayStr, formatDateKo, strToDate } from '../utils/date.js';
-import { t } from '../utils/i18n.js';
+import { t, getMessages } from '../utils/i18n.js';
 
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 const genderLabel = (g) => ({ male: t('groupDetail.genderMale'), female: t('groupDetail.genderFemale'), other: t('groupDetail.genderOther') }[g] || '—');
@@ -47,7 +47,7 @@ export class GroupDetailPage {
     return `
       <div class="page-header">
         <div class="page-header-left">
-          <a href="#/groups" class="btn btn-ghost btn-icon" aria-label="뒤로" style="font-size:20px;">←</a>
+          <a href="#/groups" class="btn btn-ghost btn-icon" aria-label="${t('common.back')}" style="font-size:20px;">←</a>
           <div>
             <h1 class="page-title">
               <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${escapeHtml(this.group.color)};margin-right:8px;vertical-align:middle;"></span>
@@ -265,7 +265,6 @@ export class GroupDetailPage {
       : 0;
 
     // 월별 그룹
-    const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
     const byMonth = {};
     records.forEach(r => {
       const ym = r.date.slice(0, 7);
@@ -275,8 +274,9 @@ export class GroupDetailPage {
 
     const monthsHtml = Object.entries(byMonth).map(([ym, recs]) => {
       const [y, m] = ym.split('-');
+      const daysShort = getMessages().date.daysShort;
       const rows = recs.map(r => {
-        const dow = DAY_NAMES[strToDate(r.date).getDay()];
+        const dow = daysShort[strToDate(r.date).getDay()];
         const mmdd = r.date.slice(5).replace('-', '/');
         return `
           <div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-top:1px solid var(--color-border-light);">
@@ -288,51 +288,51 @@ export class GroupDetailPage {
       return `
         <div style="margin-bottom:var(--space-4);">
           <div style="font-size:12px; font-weight:700; color:var(--color-text-muted); margin-bottom:4px;">
-            ${y}년 ${parseInt(m)}월 <span style="font-weight:400;">(${recs.length}건)</span>
+            ${t('groupDetail.histYearMonth', { y, m: parseInt(m) })} <span style="font-weight:400;">${t('groupDetail.histCount', { n: recs.length })}</span>
           </div>
           ${rows}
         </div>`;
     }).join('');
 
     Modal.open({
-      title: `${escapeHtml(s.name)} 출석 이력`,
+      title: t('groupDetail.attendHistTitle', { name: s.name }),
       body: `
         <!-- 요약 통계 -->
         <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:var(--space-2); margin-bottom:var(--space-4); text-align:center;">
           <div>
             <div style="font-size:18px; font-weight:700;">${total}</div>
-            <div style="font-size:11px; color:var(--color-text-muted);">전체</div>
+            <div style="font-size:11px; color:var(--color-text-muted);">${t('groupDetail.histTotal')}</div>
           </div>
           <div>
             <div style="font-size:18px; font-weight:700; color:var(--color-present);">${summary.present}</div>
-            <div style="font-size:11px; color:var(--color-text-muted);">출석</div>
+            <div style="font-size:11px; color:var(--color-text-muted);">${t('status.present')}</div>
           </div>
           <div>
             <div style="font-size:18px; font-weight:700; color:var(--color-absent);">${summary.absent}</div>
-            <div style="font-size:11px; color:var(--color-text-muted);">결석</div>
+            <div style="font-size:11px; color:var(--color-text-muted);">${t('status.absent')}</div>
           </div>
           <div>
             <div style="font-size:18px; font-weight:700; color:var(--color-late);">${summary.late}</div>
-            <div style="font-size:11px; color:var(--color-text-muted);">지각</div>
+            <div style="font-size:11px; color:var(--color-text-muted);">${t('status.late')}</div>
           </div>
           <div>
             <div style="font-size:18px; font-weight:700; color:var(--color-early);">${summary.early}</div>
-            <div style="font-size:11px; color:var(--color-text-muted);">조퇴</div>
+            <div style="font-size:11px; color:var(--color-text-muted);">${t('status.early')}</div>
           </div>
         </div>
         <div style="text-align:center; font-size:13px; color:var(--color-text-muted); margin-bottom:var(--space-4);">
-          출석률 <strong style="color:var(--color-present);">${attendRate}%</strong>
+          ${t('groupDetail.attendRateLabel')} <strong style="color:var(--color-present);">${attendRate}%</strong>
         </div>
 
         <!-- 이력 목록 -->
         <div style="max-height:340px; overflow-y:auto; padding-right:2px;">
           ${records.length === 0
-            ? '<div style="text-align:center; color:var(--color-text-muted); padding:var(--space-8);">출석 기록이 없습니다.</div>'
+            ? `<div style="text-align:center; color:var(--color-text-muted); padding:var(--space-8);">${t('groupDetail.noAttendanceMsg')}</div>`
             : monthsHtml}
         </div>
       `,
-      confirmText: '정보 수정',
-      cancelText: '닫기',
+      confirmText: t('groupDetail.editInfoBtn'),
+      cancelText: t('common.close'),
       onConfirm: () => this._openEditStudent(id),
     });
   }
@@ -342,9 +342,9 @@ export class GroupDetailPage {
   async _openAddStudent() {
     const nextNum = await StudentsDB.nextNumber(this.groupId);
     Modal.open({
-      title: '구성원 추가',
+      title: t('groupDetail.addTitle'),
       body: this._studentForm(null, nextNum),
-      confirmText: '추가',
+      confirmText: t('common.add'),
       onConfirm: () => this._submitAdd(),
     });
     this._bindFormEvents();
@@ -356,9 +356,9 @@ export class GroupDetailPage {
     const student = await StudentsDB.get(id);
     if (!student) return;
     Modal.open({
-      title: '구성원 수정',
+      title: t('groupDetail.editTitle'),
       body: this._studentForm(student),
-      confirmText: '저장',
+      confirmText: t('common.save'),
       onConfirm: () => this._submitEdit(id),
     });
     this._bindFormEvents(student);
@@ -373,47 +373,47 @@ export class GroupDetailPage {
       <div style="display:flex; flex-direction:column; gap:0;">
 
         <!-- 기본 정보 -->
-        <div style="font-size:12px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-3);">기본 정보</div>
+        <div style="font-size:12px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-3);">${t('groupDetail.basicInfo')}</div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-3);">
           <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label" for="s-name">이름 <span style="color:var(--color-absent)">*</span></label>
-            <input type="text" id="s-name" class="form-input" value="${escapeHtml(s?.name || '')}" placeholder="홍길동" maxlength="30" autocomplete="off">
+            <label class="form-label" for="s-name">${t('groupDetail.colName')} <span style="color:var(--color-absent)">${t('common.required')}</span></label>
+            <input type="text" id="s-name" class="form-input" value="${escapeHtml(s?.name || '')}" placeholder="${t('groupDetail.namePH')}" maxlength="30" autocomplete="off">
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label" for="s-number">번호</label>
+            <label class="form-label" for="s-number">${t('groupDetail.colNumber')}</label>
             <input type="number" id="s-number" class="form-input" value="${s?.number ?? nextNum}" min="0" max="999">
           </div>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-3);">
           <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label" for="s-age">나이</label>
-            <input type="number" id="s-age" class="form-input" value="${s?.age ?? ''}" placeholder="예: 15" min="1" max="120">
+            <label class="form-label" for="s-age">${t('groupDetail.colAge')}</label>
+            <input type="number" id="s-age" class="form-input" value="${s?.age ?? ''}" placeholder="${t('groupDetail.agePH')}" min="1" max="120">
           </div>
           <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label" for="s-gender">성별</label>
+            <label class="form-label" for="s-gender">${t('groupDetail.colGender')}</label>
             <select id="s-gender" class="form-select">
-              <option value="">선택 안 함</option>
-              <option value="male"   ${s?.gender === 'male'   ? 'selected' : ''}>남</option>
-              <option value="female" ${s?.gender === 'female' ? 'selected' : ''}>여</option>
-              <option value="other"  ${s?.gender === 'other'  ? 'selected' : ''}>기타</option>
+              <option value="">${t('groupDetail.genderNone')}</option>
+              <option value="male"   ${s?.gender === 'male'   ? 'selected' : ''}>${t('groupDetail.genderMale')}</option>
+              <option value="female" ${s?.gender === 'female' ? 'selected' : ''}>${t('groupDetail.genderFemale')}</option>
+              <option value="other"  ${s?.gender === 'other'  ? 'selected' : ''}>${t('groupDetail.genderOther')}</option>
             </select>
           </div>
         </div>
 
         <div class="form-group" style="margin-bottom:var(--space-4);">
-          <label class="form-label" for="s-phone">연락처 <span class="form-label-optional">(선택)</span></label>
-          <input type="tel" id="s-phone" class="form-input" value="${escapeHtml(s?.phone || '')}" placeholder="010-0000-0000">
+          <label class="form-label" for="s-phone">${t('groupDetail.colPhone')} <span class="form-label-optional">${t('common.optional')}</span></label>
+          <input type="tel" id="s-phone" class="form-input" value="${escapeHtml(s?.phone || '')}" placeholder="${t('groupDetail.phonePH')}">
         </div>
 
         <div class="divider"></div>
 
         <!-- 수업 정보 -->
-        <div style="font-size:12px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-3); margin-top:var(--space-3);">수업 정보</div>
+        <div style="font-size:12px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-3); margin-top:var(--space-3);">${t('groupDetail.classInfo')}</div>
 
         <div class="form-group" style="margin-bottom:var(--space-3);">
-          <label class="form-label">출석 요일 <span class="form-label-optional">(선택)</span></label>
+          <label class="form-label">${t('groupDetail.attendDaysLabel')} <span class="form-label-optional">${t('common.optional')}</span></label>
           <div style="display:flex; gap:var(--space-1); flex-wrap:wrap;" id="days-picker">
             ${DAYS.map(d => {
               const checked = (s?.attendanceDays || []).includes(d);
@@ -425,12 +425,12 @@ export class GroupDetailPage {
         </div>
 
         <div class="form-group" style="margin-bottom:var(--space-3);">
-          <label class="form-label">수업 시간 <span class="form-label-optional">(선택 · 요일별)</span></label>
+          <label class="form-label">${t('groupDetail.classTimeLabel')} <span class="form-label-optional">${t('common.optional')}</span></label>
           <div id="time-inputs-container"></div>
         </div>
 
         <div class="form-group" style="margin-bottom:var(--space-4);">
-          <label class="form-label" for="s-registered">최초 등록일</label>
+          <label class="form-label" for="s-registered">${t('groupDetail.registeredAtLabel')}</label>
           <input type="date" id="s-registered" class="form-input" value="${s?.registeredAt || today}" max="${today}">
         </div>
 
@@ -438,22 +438,22 @@ export class GroupDetailPage {
 
         <!-- 메모 -->
         <div class="form-group" style="margin-top:var(--space-3); margin-bottom:${s === null ? 'var(--space-4)' : '0'};">
-          <label class="form-label" for="s-memo">메모 <span class="form-label-optional">(선택)</span></label>
-          <textarea id="s-memo" class="form-textarea" placeholder="특이사항, 학부모 연락처 등" maxlength="300" style="min-height:64px;">${escapeHtml(s?.memo || '')}</textarea>
+          <label class="form-label" for="s-memo">${t('groupDetail.memoLabel')} <span class="form-label-optional">${t('common.optional')}</span></label>
+          <textarea id="s-memo" class="form-textarea" placeholder="${t('groupDetail.memoPH')}" maxlength="300" style="min-height:64px;">${escapeHtml(s?.memo || '')}</textarea>
         </div>
 
         ${s === null ? `
         <div class="divider"></div>
 
         <!-- 수강 계약 (추가 시) -->
-        <div style="font-size:12px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-3); margin-top:var(--space-3);">수강 계약 <span style="font-weight:400; text-transform:none;">(선택)</span></div>
+        <div style="font-size:12px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-3); margin-top:var(--space-3);">${t('groupDetail.contractSection')} <span style="font-weight:400; text-transform:none;">${t('common.optional')}</span></div>
 
         <div style="display:flex; gap:4px; margin-bottom:var(--space-3);">
-          ${['none', 'period', 'count'].map(type => {
-            const labels = { none: '없음', period: '기간제', count: '횟수제' };
-            const active = type === 'none';
-            return `<button type="button" class="contract-type-btn" data-type="${type}"
-              style="flex:1; padding:7px 4px; border-radius:var(--radius-md); border:1.5px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}; background:${active ? 'var(--color-primary)' : 'transparent'}; color:${active ? 'white' : 'var(--color-text-muted)'}; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font-family);">${labels[type]}</button>`;
+          ${['none', 'period', 'count'].map(ctype => {
+            const ctypeLabels = { none: t('groupDetail.contractTypeNone'), period: t('dashboard.periodBadge'), count: t('dashboard.countBadge') };
+            const active = ctype === 'none';
+            return `<button type="button" class="contract-type-btn" data-type="${ctype}"
+              style="flex:1; padding:7px 4px; border-radius:var(--radius-md); border:1.5px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}; background:${active ? 'var(--color-primary)' : 'transparent'}; color:${active ? 'white' : 'var(--color-text-muted)'}; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font-family);">${ctypeLabels[ctype]}</button>`;
           }).join('')}
         </div>
         <input type="hidden" id="s-contract-type" value="none">
@@ -461,11 +461,11 @@ export class GroupDetailPage {
         <div id="contract-period-fields" style="display:none;">
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-3);">
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label" for="s-contract-start">시작일</label>
+              <label class="form-label" for="s-contract-start">${t('groupDetail.contractStartLabel')}</label>
               <input type="date" id="s-contract-start" class="form-input" value="${today}">
             </div>
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label" for="s-contract-end">종료일</label>
+              <label class="form-label" for="s-contract-end">${t('groupDetail.contractEndDateLabel')}</label>
               <input type="date" id="s-contract-end" class="form-input" value="">
             </div>
           </div>
@@ -474,19 +474,19 @@ export class GroupDetailPage {
         <div id="contract-count-fields" style="display:none;">
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-3);">
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label" for="s-contract-start">시작일</label>
+              <label class="form-label" for="s-contract-start">${t('groupDetail.contractStartLabel')}</label>
               <input type="date" id="s-contract-start" class="form-input" value="${today}">
             </div>
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label" for="s-contract-total">총 횟수</label>
-              <input type="number" id="s-contract-total" class="form-input" value="" min="1" max="9999" placeholder="예: 50">
+              <label class="form-label" for="s-contract-total">${t('groupDetail.contractTotalLabel')}</label>
+              <input type="number" id="s-contract-total" class="form-input" value="" min="1" max="9999" placeholder="${t('groupDetail.contractTotalPH')}">
             </div>
           </div>
         </div>
 
         <div class="form-group" id="s-contract-memo-wrap" style="display:none; margin-bottom:0;">
-          <label class="form-label" for="s-contract-memo">계약 메모 <span class="form-label-optional">(선택)</span></label>
-          <input type="text" id="s-contract-memo" class="form-input" value="" placeholder="예: 3개월 등록" maxlength="100">
+          <label class="form-label" for="s-contract-memo">${t('groupDetail.contractMemoLabel')} <span class="form-label-optional">${t('common.optional')}</span></label>
+          <input type="text" id="s-contract-memo" class="form-input" value="" placeholder="${t('groupDetail.contractMemoPH')}" maxlength="100">
         </div>
         ` : ''}
 
@@ -515,7 +515,7 @@ export class GroupDetailPage {
         });
 
         if (!selectedDays.length) {
-          container.innerHTML = `<span style="font-size:13px; color:var(--color-text-muted);">출석 요일을 먼저 선택하세요.</span>`;
+          container.innerHTML = `<span style="font-size:13px; color:var(--color-text-muted);">${t('groupDetail.selectDaysFirst')}</span>`;
           return;
         }
 
@@ -613,12 +613,12 @@ export class GroupDetailPage {
         const memo = document.getElementById('s-contract-memo')?.value?.trim() || '';
 
         if (contractType === 'period' && !endDate) {
-          Toast.error('계약 종료일을 입력하세요.');
+          Toast.error(t('messages.contractEndReq'));
           await StudentsDB.delete(student.id); // 학생도 롤백
           return;
         }
         if (contractType === 'count' && !totalCount) {
-          Toast.error('계약 총 횟수를 입력하세요.');
+          Toast.error(t('messages.contractTotalReq'));
           await StudentsDB.delete(student.id);
           return;
         }
@@ -700,22 +700,22 @@ export class GroupDetailPage {
       if (c.type === 'period') {
         const daysLeft = Math.ceil((new Date(c.endDate) - new Date(this.today)) / 86400000);
         const endStr = c.endDate ? c.endDate.slice(5).replace('-', '.') : '—';
-        if (daysLeft < 0)        { label = '만료';                      color = 'var(--color-absent)'; bold = true; }
-        else if (daysLeft === 0) { label = '오늘만료';                   color = 'var(--color-absent)'; bold = true; }
-        else if (daysLeft <= 7)  { label = `~${endStr} D-${daysLeft}`;  color = 'var(--color-late)';   bold = true; }
-        else                     { label = `~${endStr}`;                bold = true; }
+        if (daysLeft < 0)        { label = t('groupDetail.contractExpired');               color = 'var(--color-absent)'; bold = true; }
+        else if (daysLeft === 0) { label = t('groupDetail.contractEndsToday');             color = 'var(--color-absent)'; bold = true; }
+        else if (daysLeft <= 7)  { label = `~${endStr} D-${daysLeft}`;                    color = 'var(--color-late)';   bold = true; }
+        else                     { label = `~${endStr}`;                                   bold = true; }
       } else if (c.type === 'count') {
         const rem = c._remaining;
-        if (rem === undefined)   { label = '계산중'; }
-        else if (rem <= 0)       { label = '소진';          color = 'var(--color-absent)';  bold = true; }
-        else if (rem <= 3)       { label = `잔여 ${rem}회`; color = 'var(--color-late)';    bold = true; }
-        else                     { label = `잔여 ${rem}회`; color = 'var(--color-present)'; bold = true; }
+        if (rem === undefined)   { label = t('groupDetail.contractCalc'); }
+        else if (rem <= 0)       { label = t('dashboard.exhausted');                       color = 'var(--color-absent)';  bold = true; }
+        else if (rem <= 3)       { label = t('dashboard.remaining', { n: rem });           color = 'var(--color-late)';    bold = true; }
+        else                     { label = t('dashboard.remaining', { n: rem });           color = 'var(--color-present)'; bold = true; }
       }
     }
 
     return `<button class="btn btn-ghost contract-history-btn" data-id="${studentId}"
       style="font-size:12px; padding:2px 4px; color:${color}; font-weight:${bold ? '600' : '400'}; text-decoration:underline; cursor:pointer;"
-      title="계약 이력">${label}</button>`;
+      title="${t('groupDetail.contractHistBtn')}">${label}</button>`;
   }
 
   async _loadContractStatus() {
@@ -774,53 +774,53 @@ export class GroupDetailPage {
       ? `<div style="border:1.5px solid var(--color-primary); border-radius:var(--radius-md); padding:var(--space-4); margin-bottom:var(--space-4);">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
             <div>
-              <span class="badge" style="background:var(--color-primary); color:white; margin-bottom:6px;">${active.type === 'period' ? '기간제' : '횟수제'}</span>
+              <span class="badge" style="background:var(--color-primary); color:white; margin-bottom:6px;">${active.type === 'period' ? t('dashboard.periodBadge') : t('dashboard.countBadge')}</span>
               <div style="font-size:14px; font-weight:600; margin-bottom:4px;">
                 ${active.type === 'period'
                   ? `${active.startDate} ~ ${active.endDate || '—'}`
-                  : `총 ${active.totalCount ?? 0}회 (${active.startDate}~)`}
+                  : `${t('groupDetail.contractTotalLabel')} ${active.totalCount ?? 0} (${active.startDate}~)`}
               </div>
-              ${active.type === 'count' ? `<div style="font-size:13px; color:${remaining <= 0 ? 'var(--color-absent)' : remaining <= 3 ? 'var(--color-late)' : 'var(--color-present)'}; font-weight:600;">잔여 ${remaining}회</div>` : ''}
+              ${active.type === 'count' ? `<div style="font-size:13px; color:${remaining <= 0 ? 'var(--color-absent)' : remaining <= 3 ? 'var(--color-late)' : 'var(--color-present)'}; font-weight:600;">${t('dashboard.remaining', { n: remaining })}</div>` : ''}
               ${active.memo ? `<div style="font-size:12px; color:var(--color-text-muted); margin-top:4px;">${escapeHtml(active.memo)}</div>` : ''}
             </div>
             <div style="display:flex; gap:4px; flex-shrink:0;">
-              <button class="btn btn-secondary btn-sm edit-contract-btn" data-id="${active.id}">수정</button>
-              <button class="btn btn-sm end-contract-btn" data-id="${active.id}" style="background:var(--color-absent); color:white; border:none;">종료</button>
+              <button class="btn btn-secondary btn-sm edit-contract-btn" data-id="${active.id}">${t('common.edit')}</button>
+              <button class="btn btn-sm end-contract-btn" data-id="${active.id}" style="background:var(--color-absent); color:white; border:none;">${t('groupDetail.contractEndBtn')}</button>
             </div>
           </div>
         </div>`
-      : `<div style="padding:var(--space-4); background:var(--color-surface-2); border-radius:var(--radius-md); color:var(--color-text-muted); font-size:13px; text-align:center; margin-bottom:var(--space-4);">현재 활성 계약이 없습니다.</div>`;
+      : `<div style="padding:var(--space-4); background:var(--color-surface-2); border-radius:var(--radius-md); color:var(--color-text-muted); font-size:13px; text-align:center; margin-bottom:var(--space-4);">${t('groupDetail.noActiveContract')}</div>`;
 
     const historyHtml = history.length === 0 ? ''
       : `<div style="margin-top:var(--space-2);">
-          <div style="font-size:11px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-2);">이전 이력 (${history.length}건)</div>
+          <div style="font-size:11px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-2);">${t('groupDetail.contractHistHeader', { n: history.length })}</div>
           ${history.map(c => `
             <div style="display:flex; justify-content:space-between; align-items:center; padding:var(--space-3) 0; border-top:1px solid var(--color-border-light); font-size:13px;">
               <div>
-                <span style="font-weight:600;">${c.type === 'period' ? '기간제' : '횟수제'}</span>
+                <span style="font-weight:600;">${c.type === 'period' ? t('dashboard.periodBadge') : t('dashboard.countBadge')}</span>
                 <span style="color:var(--color-text-muted); margin-left:6px;">
-                  ${c.type === 'period' ? `${c.startDate} ~ ${c.endDate}` : `총 ${c.totalCount ?? 0}회 (${c.startDate}~)`}
+                  ${c.type === 'period' ? `${c.startDate} ~ ${c.endDate}` : `${t('groupDetail.contractTotalLabel')} ${c.totalCount ?? 0} (${c.startDate}~)`}
                 </span>
                 ${c.memo ? `<div style="color:var(--color-text-muted); font-size:12px;">${escapeHtml(c.memo)}</div>` : ''}
               </div>
               <div style="display:flex; gap:4px; align-items:center;">
-                <span style="font-size:11px; color:var(--color-text-muted);">종료됨</span>
-                <button class="btn btn-ghost btn-icon-sm del-contract-btn" data-id="${c.id}" title="삭제" style="color:var(--color-absent);">✕</button>
+                <span style="font-size:11px; color:var(--color-text-muted);">${t('groupDetail.contractEndedLabel')}</span>
+                <button class="btn btn-ghost btn-icon-sm del-contract-btn" data-id="${c.id}" title="${t('common.delete')}" style="color:var(--color-absent);">✕</button>
               </div>
             </div>
           `).join('')}
         </div>`;
 
     Modal.open({
-      title: `${escapeHtml(student.name)} — 수강 계약`,
+      title: t('groupDetail.contractModalTitle', { name: student.name }),
       body: `
-        <button class="btn btn-primary btn-sm" id="new-contract-btn" style="margin-bottom:var(--space-4); width:100%;">+ 새 계약 추가</button>
-        <div style="font-size:11px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-2);">현재 계약</div>
+        <button class="btn btn-primary btn-sm" id="new-contract-btn" style="margin-bottom:var(--space-4); width:100%;">${t('groupDetail.newContractBtn')}</button>
+        <div style="font-size:11px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-2);">${t('groupDetail.activeContractLabel')}</div>
         ${activeHtml}
         ${historyHtml}
       `,
       hideConfirm: true,
-      cancelText: '닫기',
+      cancelText: t('common.close'),
     });
 
     setTimeout(() => {
@@ -835,7 +835,7 @@ export class GroupDetailPage {
       });
       document.querySelectorAll('.end-contract-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
-          const ok = await Modal.confirm({ title: '계약 종료', message: '현재 계약을 종료하시겠습니까?', confirmText: '종료', danger: true });
+          const ok = await Modal.confirm({ title: t('groupDetail.contractEndTitle'), message: t('groupDetail.contractEndMsg'), confirmText: t('groupDetail.contractEndBtn'), danger: true });
           if (ok) {
             await ContractsDB.end(btn.dataset.id);
             await this._loadContractStatus();
@@ -845,7 +845,7 @@ export class GroupDetailPage {
       });
       document.querySelectorAll('.del-contract-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
-          const ok = await Modal.confirm({ title: '이력 삭제', message: '이 계약 이력을 삭제하시겠습니까?', confirmText: '삭제', danger: true });
+          const ok = await Modal.confirm({ title: t('groupDetail.contractDeleteTitle'), message: t('groupDetail.contractDeleteMsg'), confirmText: t('common.delete'), danger: true });
           if (ok) {
             await ContractsDB.delete(btn.dataset.id);
             await this._showContractList(student);
@@ -861,43 +861,43 @@ export class GroupDetailPage {
     const type = contract?.type || 'period';
 
     Modal.open({
-      title: isEdit ? '계약 수정' : '새 계약 추가',
+      title: isEdit ? t('groupDetail.contractFormEditTitle') : t('groupDetail.contractFormNewTitle'),
       body: `
         <div style="margin-bottom:var(--space-3);">
-          <label class="form-label">계약 유형</label>
+          <label class="form-label">${t('groupDetail.contractTypeLabel')}</label>
           <div style="display:flex; gap:4px;">
-            ${['period', 'count'].map(t => {
-              const labels = { period: '기간제', count: '횟수제' };
-              const active = type === t;
-              return `<button type="button" class="contract-type-btn2" data-type="${t}"
-                style="flex:1; padding:7px 4px; border-radius:var(--radius-md); border:1.5px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}; background:${active ? 'var(--color-primary)' : 'transparent'}; color:${active ? 'white' : 'var(--color-text-muted)'}; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font-family);">${labels[t]}</button>`;
+            ${['period', 'count'].map(ctype => {
+              const ctypeLabels = { period: t('dashboard.periodBadge'), count: t('dashboard.countBadge') };
+              const active = type === ctype;
+              return `<button type="button" class="contract-type-btn2" data-type="${ctype}"
+                style="flex:1; padding:7px 4px; border-radius:var(--radius-md); border:1.5px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}; background:${active ? 'var(--color-primary)' : 'transparent'}; color:${active ? 'white' : 'var(--color-text-muted)'}; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font-family);">${ctypeLabels[ctype]}</button>`;
             }).join('')}
           </div>
           <input type="hidden" id="cf-type" value="${type}">
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="cf-start">시작일</label>
+          <label class="form-label" for="cf-start">${t('groupDetail.contractStartLabel')}</label>
           <input type="date" id="cf-start" class="form-input" value="${contract?.startDate || today}">
         </div>
 
         <div id="cf-period-fields" style="display:${type === 'period' ? 'block' : 'none'};">
           <div class="form-group">
-            <label class="form-label" for="cf-end">종료일</label>
+            <label class="form-label" for="cf-end">${t('groupDetail.contractEndDateLabel')}</label>
             <input type="date" id="cf-end" class="form-input" value="${contract?.endDate || ''}">
           </div>
         </div>
 
         <div id="cf-count-fields" style="display:${type === 'count' ? 'block' : 'none'};">
           <div class="form-group">
-            <label class="form-label" for="cf-total">총 횟수</label>
-            <input type="number" id="cf-total" class="form-input" value="${contract?.totalCount ?? ''}" min="1" max="9999" placeholder="예: 50">
+            <label class="form-label" for="cf-total">${t('groupDetail.contractTotalLabel')}</label>
+            <input type="number" id="cf-total" class="form-input" value="${contract?.totalCount ?? ''}" min="1" max="9999" placeholder="${t('groupDetail.contractTotalPH')}">
           </div>
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label" for="cf-memo">메모 <span class="form-label-optional">(선택)</span></label>
-          <input type="text" id="cf-memo" class="form-input" value="${escapeHtml(contract?.memo || '')}" placeholder="예: 3개월 등록" maxlength="100">
+          <label class="form-label" for="cf-memo">${t('groupDetail.contractMemoLabel')} <span class="form-label-optional">${t('common.optional')}</span></label>
+          <input type="text" id="cf-memo" class="form-input" value="${escapeHtml(contract?.memo || '')}" placeholder="${t('groupDetail.contractMemoPH')}" maxlength="100">
         </div>
       `,
       confirmText: isEdit ? t('common.save') : t('common.add'),
@@ -909,8 +909,8 @@ export class GroupDetailPage {
         const totalCount = document.getElementById('cf-total')?.value ? Number(document.getElementById('cf-total').value) : null;
         const memo       = document.getElementById('cf-memo')?.value?.trim() || '';
 
-        if (contractType === 'period' && !endDate)    { Toast.error(t('messages.nameRequired')); return; }
-        if (contractType === 'count' && !totalCount)  { Toast.error(t('messages.nameRequired')); return; }
+        if (contractType === 'period' && !endDate)    { Toast.error(t('messages.contractEndReq')); return; }
+        if (contractType === 'count' && !totalCount)  { Toast.error(t('messages.contractTotalReq')); return; }
 
         try {
           if (isEdit) {

@@ -54,44 +54,9 @@ body {
   flex-direction: column;
 }
 
-.sidebar-header {
-  padding: var(--space-5) var(--space-5) var(--space-4);
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  text-decoration: none;
-  color: var(--color-primary);
-}
-
-.sidebar-logo-icon {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #C4623D, var(--color-primary));
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 16px;
-  font-weight: var(--font-weight-bold);
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(217, 119, 87, 0.30);
-}
-
-.sidebar-logo-text {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-headline);
-  color: var(--color-text);
-}
-
 .sidebar-nav {
   flex: 1;
-  padding: var(--space-3) var(--space-3);
+  padding: var(--space-5) var(--space-3) var(--space-3);
 }
 
 .sidebar-section-label {

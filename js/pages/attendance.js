@@ -347,10 +347,10 @@ export class AttendancePage {
 
   async _clearAll() {
     const ok = await Modal.confirm({
-      title: '출석 초기화',
+      title: t('messages.clearTitle'),
       message: t('messages.clearAttendanceConfirm'),
       danger: true,
-      confirmText: '초기화',
+      confirmText: t('messages.clearConfirmBtn'),
     });
     if (!ok) return;
 
@@ -360,7 +360,7 @@ export class AttendancePage {
       );
       const failed = results.filter(r => r.status === 'rejected').length;
       if (failed > 0) {
-        Toast.error(`${failed}명의 기록 삭제에 실패했습니다. 다시 시도해주세요.`);
+        Toast.error(t('messages.clearFailed', { n: failed }));
         return;
       }
       this.attendanceMap = {};
@@ -396,47 +396,47 @@ export class AttendancePage {
         <div id="absence-options" style="display:flex; flex-direction:column; gap:8px;">
           <button class="btn btn-secondary absence-opt" data-type="normal"
             style="text-align:left; height:auto; padding:10px 14px; display:block;">
-            <div style="font-weight:600;">단순 결석</div>
-            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">출석부에 결석으로 기록합니다</div>
+            <div style="font-weight:600;">${t('calendar.absenceNormalTitle')}</div>
+            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">${t('calendar.absenceNormalDesc')}</div>
           </button>
 
           <button class="btn btn-secondary absence-opt" data-type="makeup"
             style="text-align:left; height:auto; padding:10px 14px; display:block;">
-            <div style="font-weight:600;">보충강의 예정</div>
-            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">결석 처리 후 보충강의 날짜를 입력합니다</div>
+            <div style="font-weight:600;">${t('calendar.absenceMakeupTitle')}</div>
+            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">${t('calendar.absenceMakeupDesc')}</div>
           </button>
 
           <button class="btn btn-secondary absence-opt" data-type="extend"
             ${hasPeriod ? '' : 'disabled'}
             style="text-align:left; height:auto; padding:10px 14px; display:block; ${hasPeriod ? '' : 'opacity:0.4; cursor:not-allowed;'}">
-            <div style="font-weight:600;">기간 연장 <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">(기간제)</span></div>
+            <div style="font-weight:600;">${t('calendar.absenceExtendTitle')} <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">${t('calendar.absenceExtendPeriod')}</span></div>
             <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">
-              ${hasPeriod ? `계약 종료일을 1일 연장합니다 (현재: ${contract.endDate})` : '활성 기간제 계약이 없습니다'}
+              ${hasPeriod ? t('calendar.absenceExtendDesc', { endDate: contract.endDate }) : t('calendar.absenceExtendNone')}
             </div>
           </button>
 
           <button class="btn btn-secondary absence-opt" data-type="no_deduct"
             ${hasCount ? '' : 'disabled'}
             style="text-align:left; height:auto; padding:10px 14px; display:block; ${hasCount ? '' : 'opacity:0.4; cursor:not-allowed;'}">
-            <div style="font-weight:600;">횟수 차감 없음 <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">(횟수제)</span></div>
+            <div style="font-weight:600;">${t('calendar.absenceNoDeductTitle')} <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">${t('calendar.absenceNoDeductCount')}</span></div>
             <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">
-              ${hasCount ? '결석 처리하되 남은 횟수에서 차감하지 않습니다' : '활성 횟수제 계약이 없습니다'}
+              ${hasCount ? t('calendar.absenceNoDeductDesc') : t('calendar.absenceNoDeductNone')}
             </div>
           </button>
         </div>
 
         <div id="makeup-date-panel" style="display:none; padding:12px; background:var(--color-surface-2); border-radius:var(--radius-md); border:1px solid var(--color-border);">
-          <div style="font-size:13px; font-weight:600; margin-bottom:8px;">보충강의 날짜 선택</div>
+          <div style="font-size:13px; font-weight:600; margin-bottom:8px;">${t('calendar.makeupDateTitle')}</div>
           <input type="date" id="makeup-date-input" class="form-input" style="width:100%; margin-bottom:8px;" min="${this.date}">
           <div style="display:flex; gap:8px;">
-            <button class="btn btn-primary btn-sm" id="makeup-confirm-btn" style="flex:1;">확인</button>
-            <button class="btn btn-secondary btn-sm" id="makeup-back-btn" style="flex:1;">돌아가기</button>
+            <button class="btn btn-primary btn-sm" id="makeup-confirm-btn" style="flex:1;">${t('common.confirm')}</button>
+            <button class="btn btn-secondary btn-sm" id="makeup-back-btn" style="flex:1;">${t('calendar.makeupBackBtn')}</button>
           </div>
         </div>
       </div>
     `;
 
-    Modal.open({ title: '결석 처리', body, hideConfirm: true, cancelText: '닫기' });
+    Modal.open({ title: t('calendar.absenceModal'), body, hideConfirm: true, cancelText: t('common.close') });
 
     const backdrop = document.getElementById('modal-backdrop');
     if (!backdrop) return;
@@ -459,7 +459,7 @@ export class AttendancePage {
 
     backdrop.querySelector('#makeup-confirm-btn')?.addEventListener('click', async () => {
       const makeupDate = backdrop.querySelector('#makeup-date-input').value;
-      if (!makeupDate) { Toast.error('날짜를 선택해주세요.'); return; }
+      if (!makeupDate) { Toast.error(t('calendar.makeupDateRequired')); return; }
       await this._applyAbsence(student, 'makeup', makeupDate, clickedBtn);
       Modal.close();
     });
@@ -510,12 +510,12 @@ export class AttendancePage {
       this._updateSummary();
 
       const labels = {
-        normal: '단순 결석',
-        makeup: makeupDate ? `보충강의 예정 (${makeupDate})` : '보충강의 예정',
-        extend: '기간 연장',
-        no_deduct: '횟수 차감 없음',
+        normal:    t('calendar.absentLabelNormal'),
+        makeup:    makeupDate ? t('calendar.absentLabelMakeupWithDate', { date: makeupDate }) : t('calendar.absentLabelMakeupNoDate'),
+        extend:    t('calendar.absentLabelExtend'),
+        no_deduct: t('calendar.absentLabelNoDeduct'),
       };
-      Toast.success(`${escapeHtml(student.name)} — ${labels[absentType] || '결석'} 처리 완료`);
+      Toast.success(t('calendar.absentDone', { name: student.name, type: labels[absentType] || t('status.absent') }));
     } catch (e) {
       Toast.error(t('messages.saveFailed'));
     } finally {
