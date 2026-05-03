@@ -7,7 +7,8 @@ import { GroupsDB } from '../db/groups.js';
 import { StudentsDB } from '../db/students.js';
 import { StatsService } from '../services/stats.js';
 import { escapeHtml } from '../utils/dom.js';
-import { todayStr, shiftMonth, formatYearMonthKo, getDaysInMonth } from '../utils/date.js';
+import { todayStr, shiftMonth, formatYearMonth, getDaysInMonth } from '../utils/date.js';
+import { t, getMessages } from '../utils/i18n.js';
 
 export class StatisticsPage {
   constructor(params) {
@@ -20,26 +21,26 @@ export class StatisticsPage {
   async render() {
     this.group = await GroupsDB.get(this.groupId);
     if (!this.group) {
-      return `<div class="page-body"><div class="empty-state"><div class="empty-state-icon">⚠</div><div class="empty-state-title">그룹을 찾을 수 없습니다</div></div></div>`;
+      return `<div class="page-body"><div class="empty-state"><div class="empty-state-icon">⚠</div><div class="empty-state-title">${t('common.groupNotFound')}</div></div></div>`;
     }
 
     return `
       <div class="page-header">
         <div class="page-header-left">
-          <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="뒤로" style="font-size:20px;">←</a>
-          <h1 class="page-title">${escapeHtml(this.group.name)} — 통계</h1>
+          <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="${t('common.back')}" style="font-size:20px;">←</a>
+          <h1 class="page-title">${escapeHtml(this.group.name)} — ${t('statistics.title')}</h1>
         </div>
         <div class="page-header-actions">
           <div class="date-nav">
             <button class="date-nav-btn" id="prev-month">←</button>
-            <span class="date-nav-label" id="month-label">${formatYearMonthKo(this.yearMonth)}</span>
+            <span class="date-nav-label" id="month-label">${formatYearMonth(this.yearMonth)}</span>
             <button class="date-nav-btn" id="next-month">→</button>
           </div>
         </div>
       </div>
       <div class="page-body">
         <div id="stats-content">
-          <div class="loading-state"><div class="spinner"></div><span>통계를 계산하는 중...</span></div>
+          <div class="loading-state"><div class="spinner"></div><span>${t('statistics.calculating')}</span></div>
         </div>
       </div>
     `;
@@ -54,7 +55,7 @@ export class StatisticsPage {
   async _changeMonth(delta) {
     this.yearMonth = shiftMonth(this.yearMonth, delta);
     const labelEl = document.getElementById('month-label');
-    if (labelEl) labelEl.textContent = formatYearMonthKo(this.yearMonth);
+    if (labelEl) labelEl.textContent = formatYearMonth(this.yearMonth);
     await this._renderStats();
   }
 
@@ -66,7 +67,6 @@ export class StatisticsPage {
 
     const [y, m] = this.yearMonth.split('-').map(Number);
 
-    // Always available: basic per-student summary
     const studentStats = await StatsService.getStudentStats(
       this.groupId,
       `${this.yearMonth}-01`,
@@ -79,21 +79,21 @@ export class StatisticsPage {
       <!-- Summary -->
       <div class="stat-cards-grid" style="margin-bottom: var(--space-5);">
         <div class="stat-card">
-          <div class="stat-card-label">이달 출석률</div>
+          <div class="stat-card-label">${t('statistics.monthlyRate')}</div>
           <div class="stat-card-value" style="color:var(--color-present)">
             ${monthlyRate !== null ? monthlyRate + '%' : '—'}
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">학생 수</div>
+          <div class="stat-card-label">${t('statistics.studentCount')}</div>
           <div class="stat-card-value">${studentStats.length}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">수업일</div>
+          <div class="stat-card-label">${t('statistics.classDays')}</div>
           <div class="stat-card-value">${studentStats[0]?.total ?? 0}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-label">평균 결석</div>
+          <div class="stat-card-label">${t('statistics.avgAbsent')}</div>
           <div class="stat-card-value" style="color:var(--color-absent)">
             ${studentStats.length > 0
               ? (studentStats.reduce((s, g) => s + g.absent, 0) / studentStats.length).toFixed(1)
@@ -104,31 +104,31 @@ export class StatisticsPage {
 
       <!-- Daily chart -->
       <div class="card" style="margin-bottom: var(--space-5);">
-        <div class="card-header"><div class="card-title">일별 출석 현황</div></div>
+        <div class="card-header"><div class="card-title">${t('statistics.dailyChart')}</div></div>
         <div class="card-body"><canvas id="daily-chart" height="120"></canvas></div>
       </div>
 
       <!-- Per-student table -->
       <div class="card">
         <div class="card-header">
-          <div class="card-title">학생별 출석 현황</div>
+          <div class="card-title">${t('statistics.studentTable')}</div>
         </div>
         <div style="overflow-x: auto;">
           <table style="width:100%; border-collapse:collapse; font-size: var(--font-size-sm);">
             <thead>
               <tr style="background: var(--color-surface-2);">
-                <th style="padding: 10px 12px; text-align:left; font-weight:600; white-space:nowrap;">번호</th>
-                <th style="padding: 10px 12px; text-align:left; font-weight:600;">이름</th>
-                <th style="padding: 10px 12px; text-align:center; font-weight:600; color:var(--color-present);">출석</th>
-                <th style="padding: 10px 12px; text-align:center; font-weight:600; color:var(--color-absent);">결석</th>
-                <th style="padding: 10px 12px; text-align:center; font-weight:600; color:var(--color-late);">지각</th>
-                <th style="padding: 10px 12px; text-align:center; font-weight:600; color:var(--color-early);">조퇴</th>
-                <th style="padding: 10px 12px; text-align:center; font-weight:600;">출석률</th>
+                <th style="padding: 10px 12px; text-align:left; font-weight:600; white-space:nowrap;">${t('statistics.colNumber')}</th>
+                <th style="padding: 10px 12px; text-align:left; font-weight:600;">${t('statistics.colName')}</th>
+                <th style="padding: 10px 12px; text-align:center; font-weight:600; color:var(--color-present);">${t('statistics.colPresent')}</th>
+                <th style="padding: 10px 12px; text-align:center; font-weight:600; color:var(--color-absent);">${t('statistics.colAbsent')}</th>
+                <th style="padding: 10px 12px; text-align:center; font-weight:600; color:var(--color-late);">${t('statistics.colLate')}</th>
+                <th style="padding: 10px 12px; text-align:center; font-weight:600; color:var(--color-early);">${t('statistics.colEarly')}</th>
+                <th style="padding: 10px 12px; text-align:center; font-weight:600;">${t('statistics.colRate')}</th>
               </tr>
             </thead>
             <tbody>
               ${studentStats.length === 0
-                ? `<tr><td colspan="7" style="padding:32px; text-align:center; color:var(--color-text-muted);">데이터가 없습니다</td></tr>`
+                ? `<tr><td colspan="7" style="padding:32px; text-align:center; color:var(--color-text-muted);">${t('statistics.noData')}</td></tr>`
                 : studentStats.map(s => `
                     <tr style="border-top: 1px solid var(--color-border-light);">
                       <td style="padding: 10px 12px; color:var(--color-text-muted);">${s.student.number}</td>
@@ -162,7 +162,7 @@ export class StatisticsPage {
     if (!canvas || !window.Chart) return;
 
     const dailyStats = await StatsService.getDailyStats(this.groupId, year, month);
-    const labels = dailyStats.map(d => d.date.slice(8)); // DD
+    const labels = dailyStats.map(d => d.date.slice(8));
     const presentData = dailyStats.map(d => d.present + d.late + d.early);
     const absentData  = dailyStats.map(d => d.absent);
 
@@ -171,8 +171,8 @@ export class StatisticsPage {
       data: {
         labels,
         datasets: [
-          { label: '출석', data: presentData, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 3 },
-          { label: '결석', data: absentData,  backgroundColor: 'rgba(239,68,68,0.7)',  borderRadius: 3 },
+          { label: t('statistics.colPresent'), data: presentData, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 3 },
+          { label: t('statistics.colAbsent'),  data: absentData,  backgroundColor: 'rgba(239,68,68,0.7)',  borderRadius: 3 },
         ],
       },
       options: {

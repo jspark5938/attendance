@@ -9,11 +9,13 @@ import { AttendanceDB } from '../db/attendance.js';
 import { ContractsDB } from '../db/contracts.js';
 import { ClosedDaysDB } from '../db/closedDays.js';
 import { escapeHtml } from '../utils/dom.js';
-import { todayStr, shiftMonth, formatYearMonthKo, getDaysInMonth, daysToNextClass } from '../utils/date.js';
+import { todayStr, shiftMonth, formatYearMonth, getDaysInMonth, daysToNextClass } from '../utils/date.js';
 import { HolidayService } from '../services/holidays.js';
 import Modal from '../components/modal.js';
 import Toast from '../components/toast.js';
+import { t, getMessages, getLocale } from '../utils/i18n.js';
 
+// Korean day abbreviations — used for DB data matching, must NOT be translated
 const DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
 
 export class CalendarPage {
@@ -29,26 +31,26 @@ export class CalendarPage {
   async render() {
     this.group = await GroupsDB.get(this.groupId);
     if (!this.group) {
-      return `<div class="page-body"><div class="empty-state"><div class="empty-state-icon">⚠</div><div class="empty-state-title">그룹을 찾을 수 없습니다</div></div></div>`;
+      return `<div class="page-body"><div class="empty-state"><div class="empty-state-icon">⚠</div><div class="empty-state-title">${t('common.groupNotFound')}</div></div></div>`;
     }
     this.students = await StudentsDB.getByGroup(this.groupId);
 
     return `
       <div class="page-header">
         <div class="page-header-left">
-          <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="뒤로" style="font-size:20px;">←</a>
-          <h1 class="page-title">${escapeHtml(this.group.name)} — 달력</h1>
+          <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="${t('common.back')}" style="font-size:20px;">←</a>
+          <h1 class="page-title">${escapeHtml(this.group.name)} — ${t('calendar.title')}</h1>
         </div>
       </div>
       <div class="page-body">
         <div class="date-nav" id="month-nav" style="justify-content:center; margin-bottom: var(--space-3);">
           <button class="date-nav-btn" id="prev-month">←</button>
-          <span class="date-nav-label" id="month-label">${formatYearMonthKo(this.yearMonth)}</span>
+          <span class="date-nav-label" id="month-label">${formatYearMonth(this.yearMonth)}</span>
           <button class="date-nav-btn" id="next-month">→</button>
         </div>
         <div class="card">
           <div class="card-body" id="calendar-container">
-            <div class="loading-state"><div class="spinner"></div><span>달력을 불러오는 중...</span></div>
+            <div class="loading-state"><div class="spinner"></div><span>${t('calendar.loading')}</span></div>
           </div>
         </div>
         <div id="day-detail" style="margin-top: var(--space-4);"></div>
@@ -77,7 +79,7 @@ export class CalendarPage {
 
   async _changeMonth(delta) {
     this.yearMonth = shiftMonth(this.yearMonth, delta);
-    document.getElementById('month-label').textContent = formatYearMonthKo(this.yearMonth);
+    document.getElementById('month-label').textContent = formatYearMonth(this.yearMonth);
     document.getElementById('day-detail').innerHTML = '';
     await this._renderCalendar();
   }
@@ -95,7 +97,6 @@ export class CalendarPage {
     this._recordMap = recordMap;
     this._closedDays = await ClosedDaysDB.getSetByGroupDateRange(this.groupId, startDate, endDate);
 
-    // 보충강의 날짜 맵: { makeupDate: Set<studentId> }
     const makeupRecords = await AttendanceDB.getMakeupsByGroupDateRange(this.groupId, startDate, endDate);
     this._makeupDates = new Map();
     makeupRecords.forEach(r => {
@@ -108,7 +109,7 @@ export class CalendarPage {
 
     const firstDayDate = new Date(year, month - 1, 1);
     const startWeekday = firstDayDate.getDay();
-    const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+    const dayNames = getMessages().date.daysShort; // locale-aware header row
     const today = todayStr();
 
     let html = `
@@ -130,8 +131,7 @@ export class CalendarPage {
       const holiday = holidays.get(dateStr) || null;
       const isHoliday = !!holiday;
 
-      // Scheduled students for this day
-      const korDay = DOW_KO[dayOfWeek];
+      const korDay = DOW_KO[dayOfWeek]; // Korean for DB matching
       const isClosed = this._closedDays.has(dateStr);
       const makeupStudentIds = this._makeupDates?.get(dateStr) ?? new Set();
       const scheduledStudents = this.students.filter(s =>
@@ -140,7 +140,6 @@ export class CalendarPage {
       const unrecordedScheduled = scheduledStudents.filter(s => !recordMap[`${s.id}_${dateStr}`]).length;
       const hasUnrecordedPast = !isClosed && scheduledCount > 0 && unrecordedScheduled > 0 && dateStr < today;
 
-      // Attendance summary
       const dayRecords = this.students.map(s => recordMap[`${s.id}_${dateStr}`]).filter(Boolean);
       const presentCount = dayRecords.filter(r => r.status === 'present' || r.status === 'late' || r.status === 'early').length;
       const absentCount = dayRecords.filter(r => r.status === 'absent').length;
@@ -171,7 +170,7 @@ export class CalendarPage {
           <div style="font-size: 14px; font-weight: ${isToday ? '700' : '500'};">${dayNum}</div>
           ${holiday ? `<div style="font-size:8px; line-height:1.2; text-align:center; color:${isToday ? 'rgba(255,255,255,0.85)' : 'var(--color-absent)'}; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 2px;">${holiday}</div>` : ''}
           ${isClosed ? `
-            <div style="font-size:9px; font-weight:700; color:${isToday ? 'rgba(255,255,255,0.9)' : 'var(--color-text-muted)'}; background:${isToday ? 'rgba(255,255,255,0.2)' : 'var(--color-border)'}; border-radius:3px; padding:0 4px; white-space:nowrap;">휴무</div>
+            <div style="font-size:9px; font-weight:700; color:${isToday ? 'rgba(255,255,255,0.9)' : 'var(--color-text-muted)'}; background:${isToday ? 'rgba(255,255,255,0.2)' : 'var(--color-border)'}; border-radius:3px; padding:0 4px; white-space:nowrap;">${t('calendar.closed')}</div>
           ` : hasData && totalStudents > 0 ? `
             <div style="font-size: 10px; font-weight: 700; color: ${isToday ? 'rgba(255,255,255,0.9)' : 'var(--color-present)'};">${rate}%</div>
             <div class="cal-dot-row">
@@ -180,7 +179,7 @@ export class CalendarPage {
             </div>
           ` : scheduledCount > 0 ? `
             <div style="font-size:9px; line-height:1.3; color:${isToday ? 'rgba(255,255,255,0.75)' : hasUnrecordedPast ? 'var(--color-late)' : 'var(--color-text-muted)'}; white-space:nowrap;">
-              예정${scheduledCount}${hasUnrecordedPast ? `·미${unrecordedScheduled}` : ''}
+              ${t('calendar.scheduledCount', {n: scheduledCount})}${hasUnrecordedPast ? `·${t('status.none')}${unrecordedScheduled}` : ''}
             </div>
           ` : ''}
         </div>
@@ -208,7 +207,6 @@ export class CalendarPage {
     const container = document.getElementById('day-detail');
     if (!container) return;
 
-    // Reload record map for accuracy after any updates
     const [year, month] = dateStr.slice(0, 7).split('-').map(Number);
     const days = getDaysInMonth(year, month);
     this._recordMap = await AttendanceDB.getByGroupDateRange(this.groupId, days[0], days[days.length - 1]);
@@ -222,10 +220,17 @@ export class CalendarPage {
 
     const [y, m, d] = dateStr.split('-');
     const dow = new Date(Number(y), Number(m) - 1, Number(d)).getDay();
-    const dayOfWeek = DOW_KO[dow];
-    const korDay = DOW_KO[dow];
+    const korDay = DOW_KO[dow]; // Korean for DB matching
+    const msgs = getMessages();
+    const displayDow = msgs.date.daysShort[dow]; // locale-aware for display
+
+    // Locale-aware date header
+    const monthName = msgs.date.months ? msgs.date.months[+m - 1] : +m;
+    const headerDate = getLocale() === 'ko'
+      ? `${+m}월 ${+d}일 (${displayDow})`
+      : `${monthName} ${+d} (${displayDow})`;
+
     const today = todayStr();
-    const isPast = dateStr < today;
     const isFuture = dateStr > today;
     const isClosed = this._closedDays.has(dateStr);
 
@@ -244,39 +249,43 @@ export class CalendarPage {
 
       let badge = '';
       if (record) {
-        const label = this._statusLabel(record.status);
+        const label = t('status.' + record.status);
         const extra = record.absentType ? this._absentTypeLabel(record.absentType, record.makeupDate) : '';
         badge = `<span class="badge badge-${record.status}" style="margin-left:auto; flex-shrink:0;">${label}${extra}</span>`;
       } else if (!isFuture) {
-        badge = `<span class="badge badge-none" style="margin-left:auto; flex-shrink:0;">미입력</span>`;
+        badge = `<span class="badge badge-none" style="margin-left:auto; flex-shrink:0;">${t('status.none')}</span>`;
       }
 
       return `
         <div class="list-item" id="srow-${student.id}" style="flex-wrap:wrap; gap:4px;">
           <div class="student-number">${student.number}</div>
           <div class="student-name">${escapeHtml(student.name)}</div>
-          ${isMakeup ? `<span style="font-size:10px; font-weight:600; color:var(--color-primary); background:var(--color-primary-light,#e8f4ff); border:1px solid var(--color-primary); border-radius:var(--radius-full); padding:0 6px; flex-shrink:0;">보충</span>` : ''}
+          ${isMakeup ? `<span style="font-size:10px; font-weight:600; color:var(--color-primary); background:var(--color-primary-light,#e8f4ff); border:1px solid var(--color-primary); border-radius:var(--radius-full); padding:0 6px; flex-shrink:0;">${t('calendar.makeupBadge')}</span>` : ''}
           ${badge}
           ${showAbsenceBtn ? `
             <button class="btn btn-sm absence-action-btn"
               data-student-id="${student.id}"
               style="font-size:11px; padding:2px 8px; color:var(--color-absent); border:1px solid var(--color-absent); background:transparent; border-radius:var(--radius-full);">
-              결석처리
+              ${t('calendar.absenceModal')}
             </button>
           ` : ''}
         </div>
       `;
     };
 
+    const headerSuffix = isClosed
+      ? `— ${t('calendar.closed')}`
+      : isFuture ? t('calendar.headerFuture') : t('calendar.headerPresent');
+
     let html = `
       <div class="card">
         <div class="card-header">
-          <div class="card-title">${+m}월 ${+d}일 (${dayOfWeek}) ${isClosed ? '— 휴무' : isFuture ? '출석 예정' : '출석 현황'}</div>
+          <div class="card-title">${headerDate} ${headerSuffix}</div>
           <div style="display:flex;gap:8px;align-items:center;">
             <button id="toggle-closed-btn" class="btn btn-sm" style="${isClosed ? 'color:var(--color-absent);border:1px solid var(--color-absent);' : 'color:var(--color-text-muted);border:1px solid var(--color-border);'} background:transparent; border-radius:var(--radius-full); font-size:12px; padding:2px 10px;">
-              ${isClosed ? '휴무 해제' : '휴무 설정'}
+              ${isClosed ? t('calendar.closedToggleOff') : t('calendar.closedToggle')}
             </button>
-            ${!isClosed ? `<a href="#/groups/${this.groupId}/attend?date=${dateStr}" class="btn btn-primary btn-sm">출석 체크</a>` : ''}
+            ${!isClosed ? `<a href="#/groups/${this.groupId}/attend?date=${dateStr}" class="btn btn-primary btn-sm">${t('attendance.title')}</a>` : ''}
           </div>
         </div>
         <div>
@@ -285,7 +294,7 @@ export class CalendarPage {
     if (scheduledStudents.length > 0) {
       html += `
         <div style="padding:var(--space-2) var(--space-5); font-size:11px; font-weight:700; color:var(--color-text-muted); background:var(--color-surface-2); border-bottom:1px solid var(--color-border-light);">
-          출석 예정 · ${scheduledStudents.length}명
+          ${t('calendar.scheduledOf', {n: scheduledStudents.length})}
         </div>
       `;
       html += scheduledStudents.map(s => renderRow(s, true)).join('');
@@ -295,23 +304,22 @@ export class CalendarPage {
     if (unscheduledWithRecord.length > 0) {
       html += `
         <div style="padding:var(--space-2) var(--space-5); font-size:11px; font-weight:700; color:var(--color-text-muted); background:var(--color-surface-2); border-top:1px solid var(--color-border-light); border-bottom:1px solid var(--color-border-light);">
-          기타 출석 · ${unscheduledWithRecord.length}명
+          ${t('calendar.otherAttend', {n: unscheduledWithRecord.length})}
         </div>
       `;
       html += unscheduledWithRecord.map(s => renderRow(s, false)).join('');
     }
 
     if (this.students.length === 0) {
-      html += `<div class="empty-state" style="padding:var(--space-8);">학생이 없습니다</div>`;
+      html += `<div class="empty-state" style="padding:var(--space-8);">${t('attendance.noStudents')}</div>`;
     }
 
     html += `</div></div>`;
     container.innerHTML = html;
 
-    // 휴무 토글 버튼
     container.querySelector('#toggle-closed-btn')?.addEventListener('click', async () => {
       const nowClosed = await ClosedDaysDB.toggle(this.groupId, dateStr);
-      Toast.success(nowClosed ? '휴무로 설정했습니다.' : '휴무를 해제했습니다.');
+      Toast.success(nowClosed ? t('calendar.closedSet') : t('calendar.closedUnset'));
       await this._renderCalendar();
       await this._showDayDetail(dateStr);
     });
@@ -341,47 +349,47 @@ export class CalendarPage {
         <div id="absence-options" style="display:flex; flex-direction:column; gap:8px;">
           <button class="btn btn-secondary absence-opt" data-type="normal"
             style="text-align:left; height:auto; padding:10px 14px; display:block;">
-            <div style="font-weight:600;">단순 결석</div>
-            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">출석부에 결석으로 기록합니다</div>
+            <div style="font-weight:600;">${t('calendar.absenceNormalTitle')}</div>
+            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">${t('calendar.absenceNormalDesc')}</div>
           </button>
 
           <button class="btn btn-secondary absence-opt" data-type="makeup"
             style="text-align:left; height:auto; padding:10px 14px; display:block;">
-            <div style="font-weight:600;">보충강의 예정</div>
-            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">결석 처리 후 보충강의 날짜를 입력합니다</div>
+            <div style="font-weight:600;">${t('calendar.absenceMakeupTitle')}</div>
+            <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">${t('calendar.absenceMakeupDesc')}</div>
           </button>
 
           <button class="btn btn-secondary absence-opt" data-type="extend"
             ${hasPeriod ? '' : 'disabled'}
             style="text-align:left; height:auto; padding:10px 14px; display:block; ${hasPeriod ? '' : 'opacity:0.4; cursor:not-allowed;'}">
-            <div style="font-weight:600;">기간 연장 <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">(기간제)</span></div>
+            <div style="font-weight:600;">${t('calendar.absenceExtendTitle')} <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">${t('calendar.absenceExtendPeriod')}</span></div>
             <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">
-              ${hasPeriod ? `계약 종료일을 1일 연장합니다 (현재: ${contract.endDate})` : '활성 기간제 계약이 없습니다'}
+              ${hasPeriod ? t('calendar.absenceExtendDesc', {endDate: contract.endDate}) : t('calendar.absenceExtendNone')}
             </div>
           </button>
 
           <button class="btn btn-secondary absence-opt" data-type="no_deduct"
             ${hasCount ? '' : 'disabled'}
             style="text-align:left; height:auto; padding:10px 14px; display:block; ${hasCount ? '' : 'opacity:0.4; cursor:not-allowed;'}">
-            <div style="font-weight:600;">횟수 차감 없음 <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">(횟수제)</span></div>
+            <div style="font-weight:600;">${t('calendar.absenceNoDeductTitle')} <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">${t('calendar.absenceNoDeductCount')}</span></div>
             <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">
-              ${hasCount ? '결석 처리하되 남은 횟수에서 차감하지 않습니다' : '활성 횟수제 계약이 없습니다'}
+              ${hasCount ? t('calendar.absenceNoDeductDesc') : t('calendar.absenceNoDeductNone')}
             </div>
           </button>
         </div>
 
         <div id="makeup-date-panel" style="display:none; padding:12px; background:var(--color-surface-2); border-radius:var(--radius-md); border:1px solid var(--color-border);">
-          <div style="font-size:13px; font-weight:600; margin-bottom:8px;">보충강의 날짜 선택</div>
+          <div style="font-size:13px; font-weight:600; margin-bottom:8px;">${t('calendar.makeupDateTitle')}</div>
           <input type="date" id="makeup-date-input" class="form-input" style="width:100%; margin-bottom:8px;" min="${dateStr}">
           <div style="display:flex; gap:8px;">
-            <button class="btn btn-primary btn-sm" id="makeup-confirm-btn" style="flex:1;">확인</button>
-            <button class="btn btn-secondary btn-sm" id="makeup-back-btn" style="flex:1;">돌아가기</button>
+            <button class="btn btn-primary btn-sm" id="makeup-confirm-btn" style="flex:1;">${t('common.confirm')}</button>
+            <button class="btn btn-secondary btn-sm" id="makeup-back-btn" style="flex:1;">${t('calendar.makeupBackBtn')}</button>
           </div>
         </div>
       </div>
     `;
 
-    Modal.open({ title: '결석 처리', body, hideConfirm: true, cancelText: '닫기' });
+    Modal.open({ title: t('calendar.absenceModal'), body, hideConfirm: true, cancelText: t('common.close') });
 
     const backdrop = document.getElementById('modal-backdrop');
     if (!backdrop) return;
@@ -406,7 +414,7 @@ export class CalendarPage {
 
     backdrop.querySelector('#makeup-confirm-btn')?.addEventListener('click', async () => {
       const makeupDate = backdrop.querySelector('#makeup-date-input').value;
-      if (!makeupDate) { Toast.error('날짜를 선택해주세요.'); return; }
+      if (!makeupDate) { Toast.error(t('calendar.makeupDateRequired')); return; }
       await this._applyAbsence(student, dateStr, 'makeup', makeupDate);
       Modal.close();
       await this._showDayDetail(dateStr);
@@ -439,26 +447,22 @@ export class CalendarPage {
     }
 
     const labels = {
-      normal: '단순 결석',
-      makeup: makeupDate ? `보충강의 예정 (${makeupDate})` : '보충강의 예정',
-      extend: '기간 연장',
-      no_deduct: '횟수 차감 없음',
+      normal:    t('calendar.absentLabelNormal'),
+      makeup:    makeupDate ? t('calendar.absentLabelMakeupWithDate', {date: makeupDate}) : t('calendar.absentLabelMakeupNoDate'),
+      extend:    t('calendar.absentLabelExtend'),
+      no_deduct: t('calendar.absentLabelNoDeduct'),
     };
-    Toast.success(`${escapeHtml(student.name)} — ${labels[absentType] || '결석'} 처리 완료`);
+    Toast.success(t('calendar.absentDone', {name: escapeHtml(student.name), type: labels[absentType] || t('status.absent')}));
   }
 
   _absentTypeLabel(absentType, makeupDate) {
     const map = {
-      normal: '',
-      makeup: makeupDate ? ` (보충 ${makeupDate})` : ' (보충예정)',
-      extend: ' (기간연장)',
-      no_deduct: ' (횟수무시)',
+      normal:    '',
+      makeup:    makeupDate ? t('calendar.absentTypeMakeupWith', {date: makeupDate}) : t('calendar.absentTypeMakeupNo'),
+      extend:    t('calendar.absentTypeExtend'),
+      no_deduct: t('calendar.absentTypeNoDeduct'),
     };
     return map[absentType] || '';
-  }
-
-  _statusLabel(status) {
-    return { present: '출석', absent: '결석', late: '지각', early: '조퇴' }[status] || status;
   }
 
   destroy() {}

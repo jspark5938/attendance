@@ -8,6 +8,7 @@ import Toast from '../components/toast.js';
 import Modal from '../components/modal.js';
 import { AuthService } from '../services/auth.js';
 import { readLegacyIndexedDB, hasLegacyData } from '../services/migration.js';
+import { t, getLocale, setLocale } from '../utils/i18n.js';
 
 export class SettingsPage {
   constructor() {
@@ -23,27 +24,34 @@ export class SettingsPage {
     const isGuest = !user;
     this._hasLegacy = await hasLegacyData();
 
+    const savedLocale = (await getByKey('settings', 'locale'))?.value || 'system';
+
     const avatarUrl = user?.photoURL
-      ? `<img src="${user.photoURL}" alt="프로필" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">`
+      ? `<img src="${user.photoURL}" alt="${t('settings.account')}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">`
       : `<div style="width:48px;height:48px;border-radius:50%;background:var(--color-primary);display:flex;align-items:center;justify-content:center;color:white;font-size:20px;font-weight:700;">${(user?.displayName || '?')[0]}</div>`;
 
     const migrationSection = this._hasLegacy ? `
-      <!-- Data migration from IndexedDB -->
       <div class="card" style="margin-bottom: var(--space-4); border:1.5px solid var(--color-warning, #f59e0b);">
         <div class="card-header">
-          <div class="card-title">기존 데이터 마이그레이션</div>
+          <div class="card-title">${t('settings.migrationTitle')}</div>
         </div>
         <div class="card-body" style="display:flex; flex-direction:column; gap: var(--space-3);">
-          <div style="font-size:13px; color:var(--color-text-muted);">이전 버전(로컬 저장)의 데이터가 감지되었습니다. 아래 버튼을 눌러 클라우드로 가져오세요.</div>
-          <button class="btn btn-primary" id="migrate-legacy-btn">기기 데이터 가져오기</button>
+          <div style="font-size:13px; color:var(--color-text-muted);">${t('settings.migrationDesc')}</div>
+          <button class="btn btn-primary" id="migrate-legacy-btn">${t('settings.migrateBtn')}</button>
         </div>
       </div>
     ` : '';
 
+    const localeOptions = [
+      { value: 'system', label: t('settings.systemLanguage') },
+      { value: 'ko',     label: '한국어' },
+      { value: 'en',     label: 'English' },
+    ];
+
     return `
       <div class="page-header">
         <div class="page-header-left">
-          <h1 class="page-title">설정</h1>
+          <h1 class="page-title">${t('settings.title')}</h1>
         </div>
       </div>
       <div class="page-body">
@@ -51,29 +59,44 @@ export class SettingsPage {
         <!-- User profile / Guest mode -->
         <div class="card" style="margin-bottom: var(--space-4);">
           <div class="card-header">
-            <div class="card-title">계정</div>
+            <div class="card-title">${t('settings.account')}</div>
           </div>
           <div class="card-body">
             ${isGuest ? `
               <div style="display:flex; align-items:center; gap:var(--space-3); margin-bottom:var(--space-4); padding:var(--space-3); background:var(--color-surface-2); border-radius:var(--radius-md);">
                 <div style="font-size:28px;">👤</div>
                 <div>
-                  <div style="font-weight:700; font-size:15px;">로컬 모드</div>
-                  <div style="font-size:13px; color:var(--color-text-muted);">데이터가 이 기기에만 저장됩니다</div>
+                  <div style="font-weight:700; font-size:15px;">${t('settings.localMode')}</div>
+                  <div style="font-size:13px; color:var(--color-text-muted);">${t('settings.localModeDesc')}</div>
                 </div>
               </div>
-              <div style="font-size:13px; color:var(--color-text-muted); margin-bottom:var(--space-3);">Google 로그인 시 현재 데이터를 클라우드에 백업하고 모든 기기에서 동기화할 수 있습니다.</div>
-              <button class="btn btn-primary" id="login-btn" style="width:100%;">Google로 로그인</button>
+              <div style="font-size:13px; color:var(--color-text-muted); margin-bottom:var(--space-3);">${t('settings.loginGoogleDesc')}</div>
+              <button class="btn btn-primary" id="login-btn" style="width:100%;">${t('settings.loginGoogle')}</button>
             ` : `
               <div style="display:flex; align-items:center; gap:var(--space-4); margin-bottom:var(--space-4);">
                 ${avatarUrl}
                 <div style="flex:1; min-width:0;">
-                  <div style="font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${user?.displayName || '이름 없음'}</div>
+                  <div style="font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${user?.displayName || t('settings.noName')}</div>
                   <div style="font-size:13px; color:var(--color-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${user?.email || ''}</div>
                 </div>
               </div>
-              <button class="btn btn-secondary" id="logout-btn" style="width:100%;">로그아웃</button>
+              <button class="btn btn-secondary" id="logout-btn" style="width:100%;">${t('settings.logout')}</button>
             `}
+          </div>
+        </div>
+
+        <!-- Language selector -->
+        <div class="card" style="margin-bottom: var(--space-4);">
+          <div class="card-header">
+            <div class="card-title">${t('settings.language')}</div>
+          </div>
+          <div class="card-body" style="display:flex; flex-direction:column; gap:var(--space-3);">
+            ${localeOptions.map(opt => `
+              <label style="display:flex; align-items:center; gap:var(--space-3); cursor:pointer;">
+                <input type="radio" name="locale-radio" value="${opt.value}" ${savedLocale === opt.value ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
+                <span style="font-size:15px;">${opt.label}</span>
+              </label>
+            `).join('')}
           </div>
         </div>
 
@@ -82,50 +105,50 @@ export class SettingsPage {
         <!-- Contract alert thresholds -->
         <div class="card" style="margin-bottom: var(--space-4);">
           <div class="card-header">
-            <div class="card-title">계약 종료 예정 알림 기준</div>
+            <div class="card-title">${t('settings.contractAlert')}</div>
           </div>
           <div class="card-body" style="display:flex; flex-direction:column; gap: var(--space-4);">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);">
               <div>
-                <div style="font-weight:600; margin-bottom:2px;">기간제</div>
-                <div style="font-size:13px; color:var(--color-text-muted);">종료일 N일 이내인 학생을 홈에 표시</div>
+                <div style="font-weight:600; margin-bottom:2px;">${t('settings.periodType')}</div>
+                <div style="font-size:13px; color:var(--color-text-muted);">${t('settings.periodTypeDesc')}</div>
               </div>
               <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
                 <input type="number" id="alert-period-days" class="form-input"
                   value="${periodDays}" min="1" max="365"
                   style="width:70px; text-align:center; padding:6px 8px;">
-                <span style="font-size:14px; color:var(--color-text-muted);">일 이내</span>
+                <span style="font-size:14px; color:var(--color-text-muted);">${t('settings.daysUnit')}</span>
               </div>
             </div>
             <div class="divider"></div>
             <div style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);">
               <div>
-                <div style="font-weight:600; margin-bottom:2px;">횟수제</div>
-                <div style="font-size:13px; color:var(--color-text-muted);">잔여 횟수가 N회 이하인 학생을 홈에 표시</div>
+                <div style="font-weight:600; margin-bottom:2px;">${t('settings.countType')}</div>
+                <div style="font-size:13px; color:var(--color-text-muted);">${t('settings.countTypeDesc')}</div>
               </div>
               <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
                 <input type="number" id="alert-count-remaining" class="form-input"
                   value="${countRemaining}" min="0" max="999"
                   style="width:70px; text-align:center; padding:6px 8px;">
-                <span style="font-size:14px; color:var(--color-text-muted);">회 이하</span>
+                <span style="font-size:14px; color:var(--color-text-muted);">${t('settings.countUnit')}</span>
               </div>
             </div>
             <div>
-              <button class="btn btn-primary" id="save-alert-settings-btn">저장</button>
+              <button class="btn btn-primary" id="save-alert-settings-btn">${t('settings.saveBtn')}</button>
             </div>
           </div>
         </div>
 
         <!-- App info -->
         <div class="card">
-          <div class="card-header"><div class="card-title">앱 정보</div></div>
+          <div class="card-header"><div class="card-title">${t('settings.appInfo')}</div></div>
           <div class="card-body" style="display:flex; flex-direction:column; gap:var(--space-2);">
             <div style="display:flex; justify-content:space-between; font-size:14px;">
-              <span style="color:var(--color-text-muted);">버전</span>
+              <span style="color:var(--color-text-muted);">${t('settings.version')}</span>
               <span style="font-weight:600;">1.0.0</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:14px;">
-              <span style="color:var(--color-text-muted);">개발자</span>
+              <span style="color:var(--color-text-muted);">${t('settings.developer')}</span>
               <span style="font-weight:600;">ISTECH</span>
             </div>
           </div>
@@ -137,67 +160,72 @@ export class SettingsPage {
   async mount() {
     document.getElementById('logout-btn')?.addEventListener('click', () => this._logout());
     document.getElementById('login-btn')?.addEventListener('click', () => this._loginFromGuest());
-
     document.getElementById('save-alert-settings-btn')?.addEventListener('click', () => this._saveAlertSettings());
 
     if (this._hasLegacy) {
       document.getElementById('migrate-legacy-btn')?.addEventListener('click', () => this._migrateLegacy());
     }
+
+    document.querySelectorAll('input[name="locale-radio"]').forEach(radio => {
+      radio.addEventListener('change', async (e) => {
+        await setLocale(e.target.value);
+      });
+    });
   }
 
   async _loginFromGuest() {
     try {
       await AuthService.signIn();
     } catch (e) {
-      Toast.error('로그인에 실패했습니다: ' + (e.message || ''));
+      Toast.error(t('messages.loginFailed', {msg: e.message || ''}));
     }
   }
 
   async _logout() {
     const ok = await Modal.confirm({
-      title: '로그아웃',
-      message: '로그아웃하시겠습니까?',
-      confirmText: '로그아웃',
+      title: t('settings.logout'),
+      message: t('settings.logoutConfirm'),
+      confirmText: t('settings.logout'),
     });
     if (!ok) return;
     try {
       await AuthService.signOut();
     } catch (e) {
-      Toast.error('로그아웃 실패: ' + e.message);
+      Toast.error(t('messages.logoutFailed', {msg: e.message}));
     }
   }
 
   async _migrateLegacy() {
     const ok = await Modal.confirm({
-      title: '기기 데이터 가져오기',
-      message: '기기에 저장된 기존 데이터를 클라우드로 가져옵니다.\n현재 클라우드 데이터는 모두 교체됩니다.\n계속하시겠습니까?',
+      title: t('settings.migrateModalTitle'),
+      message: t('settings.migrateModalMsg'),
       danger: true,
-      confirmText: '가져오기',
+      confirmText: t('settings.migrateModalBtn'),
     });
     if (!ok) return;
 
     const btn = document.getElementById('migrate-legacy-btn');
-    if (btn) { btn.disabled = true; btn.textContent = '가져오는 중...'; }
+    if (btn) { btn.disabled = true; btn.textContent = t('settings.migratingBtn'); }
 
     try {
       const data = await readLegacyIndexedDB();
-      if (!data) throw new Error('기존 데이터를 읽을 수 없습니다.');
+      if (!data) throw new Error(t('messages.migrateReadFailed'));
       await importAllData(data);
-      Toast.success('기기 데이터를 성공적으로 가져왔습니다.');
+      Toast.success(t('messages.migrateSuccess'));
       setTimeout(() => { window.location.hash = '#/'; window.location.reload(); }, 1000);
     } catch (e) {
-      Toast.error('마이그레이션 실패: ' + e.message);
-      if (btn) { btn.disabled = false; btn.textContent = '기기 데이터 가져오기'; }
+      Toast.error(t('messages.migrateFailed', {msg: e.message}));
+      if (btn) { btn.disabled = false; btn.textContent = t('settings.migrateBtn'); }
     }
   }
 
   async _saveAlertSettings() {
     const periodDays     = parseInt(document.getElementById('alert-period-days')?.value, 10);
     const countRemaining = parseInt(document.getElementById('alert-count-remaining')?.value, 10);
-    if (isNaN(periodDays) || periodDays < 1)    { Toast.error('기간제 기준은 1일 이상이어야 합니다.'); return; }
-    if (isNaN(countRemaining) || countRemaining < 0) { Toast.error('횟수제 기준은 0 이상이어야 합니다.'); return; }
+    if (isNaN(periodDays) || periodDays < 1)    { Toast.error(t('messages.periodAlertError')); return; }
+    if (isNaN(countRemaining) || countRemaining < 0) { Toast.error(t('messages.countAlertError')); return; }
     await put('settings', { key: 'contract_alert', periodDays, countRemaining });
-    Toast.success('알림 기준이 저장되었습니다.');
+    Toast.success(t('messages.alertSaved'));
   }
 
   destroy() {}
