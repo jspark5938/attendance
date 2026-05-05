@@ -20,20 +20,25 @@ export class DashboardPage {
     const groups = await GroupsDB.getAll();
 
     // Load today's summaries for each group
+    const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+    const todayDay  = DAY_NAMES[new Date(this.today + 'T00:00:00').getDay()];
+
     const groupStats = await Promise.all(groups.map(async g => {
       const students = await StudentsDB.getByGroup(g.id);
       const attMap = await AttendanceDB.getByGroupDate(g.id, this.today);
       const records = Object.values(attMap);
-      const present = records.filter(r => r.status === 'present' || r.status === 'late' || r.status === 'early').length;
-      const absent  = records.filter(r => r.status === 'absent').length;
-      const none    = students.length - records.length;
-      const rate    = students.length > 0 ? Math.round(present / students.length * 100) : 0;
-      return { group: g, students: students.length, present, absent, none, rate };
+      const present   = records.filter(r => r.status === 'present' || r.status === 'late' || r.status === 'early').length;
+      const absent    = records.filter(r => r.status === 'absent').length;
+      const none      = students.length - records.length;
+      const scheduled = students.filter(s => !s.attendanceDays?.length || s.attendanceDays.includes(todayDay)).length;
+      const rate      = students.length > 0 ? Math.round(present / students.length * 100) : 0;
+      return { group: g, students: students.length, present, absent, none, scheduled, rate };
     }));
 
-    const totalStudents = groupStats.reduce((s, g) => s + g.students, 0);
-    const totalPresent  = groupStats.reduce((s, g) => s + g.present, 0);
-    const totalAbsent   = groupStats.reduce((s, g) => s + g.absent, 0);
+    const totalStudents  = groupStats.reduce((s, g) => s + g.students, 0);
+    const totalPresent   = groupStats.reduce((s, g) => s + g.present, 0);
+    const totalAbsent    = groupStats.reduce((s, g) => s + g.absent, 0);
+    const totalScheduled = groupStats.reduce((s, g) => s + g.scheduled, 0);
 
     // Load expiring contracts
     const expiringList = await this._loadExpiringContracts(groups);
@@ -54,8 +59,10 @@ export class DashboardPage {
           </div>
           <div class="stat-card">
             <div class="stat-card-label">${t('dashboard.todayPresent')}</div>
-            <div class="stat-card-value" style="color:var(--color-present)">${totalPresent}</div>
-            <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:${totalStudents > 0 ? Math.round(totalPresent/totalStudents*100) : 0}%;background:var(--color-present);"></div></div>
+            <div class="stat-card-value" style="color:var(--color-present);">
+              ${totalPresent}<span style="font-size:0.55em;font-weight:500;color:var(--color-text-muted);"> / ${totalScheduled}</span>
+            </div>
+            <div class="stat-card-bar"><div class="stat-card-bar-fill" style="width:${totalScheduled > 0 ? Math.round(totalPresent/totalScheduled*100) : 0}%;background:var(--color-present);"></div></div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label">${t('dashboard.todayAbsent')}</div>
