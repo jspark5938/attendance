@@ -840,18 +840,13 @@
 }
 
 .login-logo {
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, #C4623D, var(--color-primary));
-  border-radius: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 28px;
-  font-weight: 800;
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  display: block;
   margin: 0 auto var(--space-5);
   box-shadow: 0 20px 40px rgba(217, 119, 87, 0.25);
+  object-fit: cover;
 }
 
 .login-title {

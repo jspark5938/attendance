@@ -36,12 +36,6 @@ export class CalendarPage {
     this.students = await StudentsDB.getByGroup(this.groupId);
 
     return `
-      <div class="page-header">
-        <div class="page-header-left">
-          <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="${t('common.back')}" style="font-size:20px;">←</a>
-          <h1 class="page-title">${escapeHtml(this.group.name)} — ${t('calendar.title')}</h1>
-        </div>
-      </div>
       <div class="page-body">
         <div class="date-nav" id="month-nav" style="justify-content:center; margin-bottom: var(--space-3);">
           <button class="date-nav-btn" id="prev-month">←</button>
@@ -242,18 +236,16 @@ export class CalendarPage {
 
     const renderRow = (student, isScheduled) => {
       const record = this._recordMap[`${student.id}_${dateStr}`];
-      const isUnrecorded = !record;
-      const isAbsent = record?.status === 'absent';
       const isMakeup = makeupStudentIds.has(student.id) && !student.attendanceDays?.includes(korDay);
-      const showAbsenceBtn = isScheduled && !isClosed && (isUnrecorded || isAbsent);
+      const canEdit = !isFuture && !isClosed && (isScheduled || !!record);
 
       let badge = '';
       if (record) {
         const label = t('status.' + record.status);
         const extra = record.absentType ? this._absentTypeLabel(record.absentType, record.makeupDate) : '';
-        badge = `<span class="badge badge-${record.status}" style="margin-left:auto; flex-shrink:0;">${label}${extra}</span>`;
+        badge = `<span class="badge badge-${record.status}" style="flex-shrink:0;">${label}${extra}</span>`;
       } else if (!isFuture) {
-        badge = `<span class="badge badge-none" style="margin-left:auto; flex-shrink:0;">${t('status.none')}</span>`;
+        badge = `<span class="badge badge-none" style="flex-shrink:0;">${t('status.none')}</span>`;
       }
 
       return `
@@ -261,12 +253,14 @@ export class CalendarPage {
           <div class="student-number">${student.number}</div>
           <div class="student-name">${escapeHtml(student.name)}</div>
           ${isMakeup ? `<span style="font-size:10px; font-weight:600; color:var(--color-primary); background:var(--color-primary-light,#e8f4ff); border:1px solid var(--color-primary); border-radius:var(--radius-full); padding:0 6px; flex-shrink:0;">${t('calendar.makeupBadge')}</span>` : ''}
+          <span style="flex:1;"></span>
           ${badge}
-          ${showAbsenceBtn ? `
-            <button class="btn btn-sm absence-action-btn"
+          ${canEdit ? `
+            <button class="btn btn-ghost edit-att-btn"
               data-student-id="${student.id}"
-              style="font-size:11px; padding:2px 8px; color:var(--color-absent); border:1px solid var(--color-absent); background:transparent; border-radius:var(--radius-full);">
-              ${t('calendar.absenceModal')}
+              title="출석 수정"
+              style="font-size:12px; padding:2px 8px; color:var(--color-text-muted); border:1px solid var(--color-border); border-radius:var(--radius-full); flex-shrink:0;">
+              ✎
             </button>
           ` : ''}
         </div>
@@ -324,15 +318,172 @@ export class CalendarPage {
       await this._showDayDetail(dateStr);
     });
 
-    container.querySelectorAll('.absence-action-btn').forEach(btn => {
+    container.querySelectorAll('.edit-att-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const student = this.students.find(s => s.id === btn.dataset.studentId);
-        if (student) await this._openAbsenceModal(student, dateStr);
+        if (student) await this._openEditAttendanceModal(student, dateStr);
       });
     });
 
     container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  async _openEditAttendanceModal(student, dateStr) {
+    const record = this._recordMap[`${student.id}_${dateStr}`];
+    const currentStatus = record?.status ?? null;
+    const contract = this.contractMap[student.id] || null;
+    const hasPeriod = contract?.type === 'period';
+    const hasCount  = contract?.type === 'count';
+
+    const [, m, d] = dateStr.split('-');
+    const headerDate = `${+m}월 ${+d}일`;
+
+    const statuses = [
+      { value: 'present', color: 'var(--color-present)' },
+      { value: 'late',    color: 'var(--color-late)' },
+      { value: 'early',   color: 'var(--color-early)' },
+      { value: 'absent',  color: 'var(--color-absent)' },
+    ];
+
+    Modal.open({
+      title: `${escapeHtml(student.name)} · ${headerDate} 출석 수정`,
+      body: `
+        <div id="edit-status-panel" style="display:flex; flex-direction:column; gap:6px;">
+          ${statuses.map(s => {
+            const isActive = currentStatus === s.value;
+            return `
+              <button class="btn edit-status-btn" data-status="${s.value}"
+                style="text-align:left; display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:var(--radius-md); border:1.5px solid ${isActive ? s.color : 'var(--color-border)'}; background:${isActive ? s.color + '18' : 'transparent'}; font-family:var(--font-family); cursor:pointer;">
+                <span style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0;"></span>
+                <span style="font-weight:600; font-size:14px; color:var(--color-text);">${t('status.' + s.value)}</span>
+                ${isActive ? '<span style="margin-left:auto;font-size:11px;font-weight:600;color:var(--color-text-muted);">현재</span>' : ''}
+              </button>`;
+          }).join('')}
+          ${currentStatus !== null ? `
+            <button class="btn edit-status-btn" data-status="none"
+              style="text-align:left; display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:var(--radius-md); border:1.5px solid var(--color-border); background:transparent; font-family:var(--font-family); cursor:pointer;">
+              <span style="width:10px;height:10px;border-radius:50%;background:var(--color-border);flex-shrink:0;"></span>
+              <span style="font-weight:600; font-size:14px; color:var(--color-text-muted);">미기록으로 변경</span>
+            </button>` : ''}
+        </div>
+
+        <div id="absence-sub-panel" style="display:none; margin-top:8px;">
+          <div style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--color-border-light);">결석 처리 방식 선택</div>
+          <div id="absence-options" style="display:flex; flex-direction:column; gap:8px;">
+            <button class="btn btn-secondary absence-opt" data-type="normal"
+              style="text-align:left; height:auto; padding:10px 14px; display:block;">
+              <div style="font-weight:600;">${t('calendar.absenceNormalTitle')}</div>
+              <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">${t('calendar.absenceNormalDesc')}</div>
+            </button>
+            <button class="btn btn-secondary absence-opt" data-type="makeup"
+              style="text-align:left; height:auto; padding:10px 14px; display:block;">
+              <div style="font-weight:600;">${t('calendar.absenceMakeupTitle')}</div>
+              <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">${t('calendar.absenceMakeupDesc')}</div>
+            </button>
+            <button class="btn btn-secondary absence-opt" data-type="extend"
+              ${hasPeriod ? '' : 'disabled'}
+              style="text-align:left; height:auto; padding:10px 14px; display:block; ${hasPeriod ? '' : 'opacity:0.4; cursor:not-allowed;'}">
+              <div style="font-weight:600;">${t('calendar.absenceExtendTitle')} <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">${t('calendar.absenceExtendPeriod')}</span></div>
+              <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">
+                ${hasPeriod ? t('calendar.absenceExtendDesc', { endDate: contract.endDate }) : t('calendar.absenceExtendNone')}
+              </div>
+            </button>
+            <button class="btn btn-secondary absence-opt" data-type="no_deduct"
+              ${hasCount ? '' : 'disabled'}
+              style="text-align:left; height:auto; padding:10px 14px; display:block; ${hasCount ? '' : 'opacity:0.4; cursor:not-allowed;'}">
+              <div style="font-weight:600;">${t('calendar.absenceNoDeductTitle')} <span style="font-size:11px; font-weight:400; color:var(--color-text-muted);">${t('calendar.absenceNoDeductCount')}</span></div>
+              <div style="font-size:12px; color:var(--color-text-muted); margin-top:2px;">
+                ${hasCount ? t('calendar.absenceNoDeductDesc') : t('calendar.absenceNoDeductNone')}
+              </div>
+            </button>
+          </div>
+
+          <div id="makeup-date-panel" style="display:none; padding:12px; background:var(--color-surface-2); border-radius:var(--radius-md); border:1px solid var(--color-border); margin-top:8px;">
+            <div style="font-size:13px; font-weight:600; margin-bottom:8px;">${t('calendar.makeupDateTitle')}</div>
+            <input type="date" id="makeup-date-input" class="form-input" style="width:100%; margin-bottom:8px;" min="${dateStr}">
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary btn-sm" id="makeup-confirm-btn" style="flex:1;">${t('common.confirm')}</button>
+              <button class="btn btn-secondary btn-sm" id="makeup-back-btn" style="flex:1;">${t('calendar.makeupBackBtn')}</button>
+            </div>
+          </div>
+        </div>
+      `,
+      hideConfirm: true,
+      cancelText: t('common.close'),
+    });
+
+    const backdrop = document.getElementById('modal-backdrop');
+    if (!backdrop) return;
+
+    const refresh = async () => {
+      Modal.close();
+      await this._showDayDetail(dateStr);
+      await this._renderCalendar();
+    };
+
+    // Status button clicks
+    backdrop.querySelectorAll('.edit-status-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const status = btn.dataset.status;
+
+        if (status === 'none') {
+          // Remove record
+          await AttendanceDB.remove(student.id, dateStr);
+          Toast.success(`${escapeHtml(student.name)} 출석 기록을 삭제했습니다.`);
+          await refresh();
+          return;
+        }
+
+        if (status === 'absent') {
+          // Show absence sub-options
+          backdrop.querySelector('#edit-status-panel').style.display = 'none';
+          backdrop.querySelector('#absence-sub-panel').style.display = 'block';
+          return;
+        }
+
+        // present / late / early — save directly
+        await AttendanceDB.set({
+          studentId: student.id,
+          groupId: this.groupId,
+          date: dateStr,
+          status,
+          absentType: null,
+          makeupDate: null,
+        });
+        Toast.success(`${escapeHtml(student.name)} → ${t('status.' + status)}`);
+        await refresh();
+      });
+    });
+
+    // Absence sub-option clicks
+    backdrop.querySelectorAll('.absence-opt').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (btn.disabled) return;
+        const type = btn.dataset.type;
+
+        if (type === 'makeup') {
+          backdrop.querySelector('#absence-options').style.display = 'none';
+          backdrop.querySelector('#makeup-date-panel').style.display = 'block';
+          return;
+        }
+
+        await this._applyAbsence(student, dateStr, type, null);
+        await refresh();
+      });
+    });
+
+    backdrop.querySelector('#makeup-confirm-btn')?.addEventListener('click', async () => {
+      const makeupDate = backdrop.querySelector('#makeup-date-input').value;
+      if (!makeupDate) { Toast.error(t('calendar.makeupDateRequired')); return; }
+      await this._applyAbsence(student, dateStr, 'makeup', makeupDate);
+      await refresh();
+    });
+
+    backdrop.querySelector('#makeup-back-btn')?.addEventListener('click', () => {
+      backdrop.querySelector('#makeup-date-panel').style.display = 'none';
+      backdrop.querySelector('#absence-options').style.display = 'flex';
+    });
   }
 
   async _openAbsenceModal(student, dateStr) {

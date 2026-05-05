@@ -22,16 +22,13 @@ export class GroupsPage {
     const groups = await GroupsDB.getAll();
 
     return `
-      <div class="page-header">
-        <div class="page-header-left">
-          <h1 class="page-title">${t('groups.title')}</h1>
-        </div>
-        <div class="page-header-actions">
-          <button class="btn btn-primary" id="add-group-btn">${t('groups.addGroup')}</button>
-        </div>
-      </div>
       <div class="page-body">
-        ${groups.length === 0 ? this._emptyState() : this._groupGrid(groups)}
+        ${groups.length === 0 ? this._emptyState() : `
+          <div style="display:flex; justify-content:flex-end; margin-bottom:var(--space-4);">
+            <button class="btn btn-primary" id="add-group-btn">${t('groups.addGroup')}</button>
+          </div>
+          ${this._groupGrid(groups)}
+        `}
       </div>
     `;
   }

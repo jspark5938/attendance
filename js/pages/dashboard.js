@@ -39,17 +39,6 @@ export class DashboardPage {
     const expiringList = await this._loadExpiringContracts(groups);
 
     return `
-      <div class="page-header">
-        <div class="page-header-left">
-          <div>
-            <h1 class="page-title">${t('dashboard.title')}</h1>
-            <div class="page-subtitle">${formatDateKo(this.today)}</div>
-          </div>
-        </div>
-        <div class="page-header-actions">
-        </div>
-      </div>
-
       <div class="page-body">
         <!-- Overall stats -->
         <div class="stat-cards-grid" style="margin-bottom: var(--space-5);">
@@ -109,13 +98,18 @@ export class DashboardPage {
     const groupMap = {};
     groups.forEach(g => { groupMap[g.id] = g; });
 
-    // Get all active contracts across all groups
+    // Get all contracts; build set of studentIds who have a pending contract
     const allContracts = await getAll('contracts');
+    const pendingStudentIds = new Set(
+      allContracts.filter(c => c.status === 'pending').map(c => c.studentId)
+    );
     const activeContracts = allContracts.filter(c => c.status === 'active');
 
     const expiring = [];
 
     for (const c of activeContracts) {
+      // Skip students who already have a queued (pending) contract
+      if (pendingStudentIds.has(c.studentId)) continue;
       const student = studentMap[c.studentId];
       const group   = groupMap[c.groupId];
       if (!student || !group) continue;
@@ -132,7 +126,9 @@ export class DashboardPage {
         const startDate = c.startDate || '2000-01-01';
         const used      = records.filter(r => ['present', 'late', 'early'].includes(r.status) && r.date >= startDate).length;
         const remaining = (c.totalCount || 0) - used;
-        if (remaining <= countRemaining) {
+        // Only show if still has sessions left (remaining > 0), matching period's endDate >= today behavior.
+        // Exhausted contracts (remaining <= 0) are handled by auto-activation in _loadContractStatus.
+        if (remaining > 0 && remaining <= countRemaining) {
           expiring.push({ student, group, contract: c, type: 'count', daysLeft: null, remaining });
         }
       }

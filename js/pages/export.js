@@ -26,12 +26,6 @@ export class ExportPage {
     const monthStart = today.slice(0, 7) + '-01';
 
     return `
-      <div class="page-header">
-        <div class="page-header-left">
-          <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="${t('common.back')}" style="font-size:20px;">←</a>
-          <h1 class="page-title">${escapeHtml(this.group.name)} — ${t('export.title')}</h1>
-        </div>
-      </div>
       <div class="page-body" style="max-width: 520px;">
         ${this._exportForm(monthStart, today)}
       </div>

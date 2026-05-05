@@ -15,9 +15,6 @@ export class PremiumPage {
 
     if (isPremium) {
       return `
-        <div class="page-header">
-          <div class="page-header-left"><h1 class="page-title">${t('premium.title')}</h1></div>
-        </div>
         <div class="page-body">
           <div class="empty-state">
             <div style="font-size:64px; margin-bottom:8px;">★</div>
@@ -37,9 +34,6 @@ export class PremiumPage {
     ];
 
     return `
-      <div class="page-header">
-        <div class="page-header-left"><h1 class="page-title">${t('premium.upgradeTitle')}</h1></div>
-      </div>
       <div class="page-body" style="max-width: 520px; margin: 0 auto;">
         <!-- Hero -->
         <div style="text-align:center; padding: var(--space-8) var(--space-4); background: linear-gradient(135deg, var(--color-primary), #7C3AED); border-radius: var(--radius-xl); color: white; margin-bottom: var(--space-5);">

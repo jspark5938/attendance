@@ -47,25 +47,14 @@ export class AttendancePage {
     const hasGroups = this._scheduled.length > 0 && this._unscheduled.length > 0;
 
     return `
-      <div class="page-header">
-        <div class="page-header-left">
-          <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="${t('common.back')}" style="font-size:20px;">←</a>
-          <div>
-            <h1 class="page-title">${escapeHtml(this.group.name)} — ${t('attendance.title')}</h1>
-            <div class="page-subtitle">${formatDateKo(this.date)}</div>
-          </div>
-        </div>
-        <div class="page-header-actions">
-          <!-- Date navigator -->
-          <div class="date-nav">
-            <button class="date-nav-btn" id="prev-date" aria-label="${t('attendance.prevDay')}">←</button>
-            <button class="date-nav-label" id="date-picker-trigger" title="${t('attendance.pickDate')}">${formatDateKo(this.date, { short: true })}</button>
-            <button class="date-nav-btn" id="next-date" aria-label="${t('attendance.nextDay')}">→</button>
-          </div>
-        </div>
-      </div>
-
       <div class="page-body">
+        <!-- Date navigator -->
+        <div class="date-nav" style="justify-content:center; margin-bottom:var(--space-4);">
+          <button class="date-nav-btn" id="prev-date" aria-label="${t('attendance.prevDay')}">←</button>
+          <button class="date-nav-label" id="date-picker-trigger" title="${t('attendance.pickDate')}">${formatDateKo(this.date, { short: true })}</button>
+          <button class="date-nav-btn" id="next-date" aria-label="${t('attendance.nextDay')}">→</button>
+        </div>
+
         <!-- Summary bar -->
         <div class="stat-cards-grid" style="margin-bottom: var(--space-5);">
           ${this._summaryCard(t('status.present'), summary.present, 'var(--color-present)')}
@@ -86,7 +75,7 @@ export class AttendancePage {
         </div>
         ${hasGroups ? `
         <div class="quick-mark-bar">
-          <span class="quick-mark-label" style="color:var(--color-present);">예정만:</span>
+          <span class="quick-mark-label" style="color:var(--color-present);">${t('attendance.scheduledOnly')}</span>
           ${STATUS_LIST.map(s => `
             <button class="btn btn-sm btn-secondary quick-scheduled-btn" data-status="${s}">
               ${t('attendance.markSched', { status: t('status.' + s) })}
@@ -175,7 +164,42 @@ export class AttendancePage {
   }
 
   async _loadContracts() {
-    const contracts = await ContractsDB.getByGroup(this.groupId);
+    let contracts = await ContractsDB.getByGroup(this.groupId);
+
+    // Pre-pass: activate pending contracts if active ones are exhausted
+    const byStudent = {};
+    for (const c of contracts) {
+      if (!byStudent[c.studentId]) byStudent[c.studentId] = { active: null, pending: [] };
+      if (c.status === 'active') byStudent[c.studentId].active = c;
+      else if (c.status === 'pending') byStudent[c.studentId].pending.push(c);
+    }
+
+    let mutated = false;
+    const today = todayStr();
+    for (const [studentId, { active, pending }] of Object.entries(byStudent)) {
+      if (!active || !pending.length) continue;
+
+      let exhausted = false;
+      if (active.type === 'period') {
+        exhausted = active.endDate && active.endDate < today;
+      } else if (active.type === 'count') {
+        const records = await AttendanceDB.getByStudent(studentId);
+        const used = records.filter(r =>
+          ['present', 'late', 'early'].includes(r.status) && r.date >= (active.startDate || '2000-01-01')
+        ).length;
+        exhausted = (active.totalCount || 0) - used <= 0;
+      }
+
+      if (exhausted) {
+        await ContractsDB.end(active.id);
+        pending.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        await ContractsDB.update(pending[0].id, { status: 'active' });
+        mutated = true;
+      }
+    }
+
+    if (mutated) contracts = await ContractsDB.getByGroup(this.groupId);
+
     this.contractMap = {};
     contracts
       .filter(c => c.status === 'active')
@@ -184,6 +208,25 @@ export class AttendancePage {
           this.contractMap[c.studentId] = c;
         }
       });
+  }
+
+  async _checkAndActivatePending(studentId) {
+    const active = this.contractMap[studentId];
+    if (!active || active.type !== 'count') return;
+
+    const records = await AttendanceDB.getByStudent(studentId);
+    const used = records.filter(r =>
+      ['present', 'late', 'early'].includes(r.status) && r.date >= (active.startDate || '2000-01-01')
+    ).length;
+    if ((active.totalCount || 0) - used > 0) return;
+
+    const all = await ContractsDB.getByStudent(studentId);
+    const pending = all.filter(c => c.status === 'pending').sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    if (!pending.length) return;
+
+    await ContractsDB.end(active.id);
+    await ContractsDB.update(pending[0].id, { status: 'active' });
+    await this._loadContracts();
   }
 
   async mount() {
@@ -296,6 +339,10 @@ export class AttendancePage {
           status,
         });
         this.attendanceMap[studentId] = rec;
+        // Check if count-based contract is exhausted → activate pending
+        if (['present', 'late', 'early'].includes(status)) {
+          await this._checkAndActivatePending(studentId);
+        }
       }
       this._updateSummary();
     } catch (e) {

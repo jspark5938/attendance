@@ -25,20 +25,12 @@ export class StatisticsPage {
     }
 
     return `
-      <div class="page-header">
-        <div class="page-header-left">
-          <a href="#/groups/${this.groupId}" class="btn btn-ghost btn-icon" aria-label="${t('common.back')}" style="font-size:20px;">←</a>
-          <h1 class="page-title">${escapeHtml(this.group.name)} — ${t('statistics.title')}</h1>
-        </div>
-        <div class="page-header-actions">
-          <div class="date-nav">
-            <button class="date-nav-btn" id="prev-month">←</button>
-            <span class="date-nav-label" id="month-label">${formatYearMonth(this.yearMonth)}</span>
-            <button class="date-nav-btn" id="next-month">→</button>
-          </div>
-        </div>
-      </div>
       <div class="page-body">
+        <div class="date-nav" style="justify-content:center; margin-bottom:var(--space-4);">
+          <button class="date-nav-btn" id="prev-month">←</button>
+          <span class="date-nav-label" id="month-label">${formatYearMonth(this.yearMonth)}</span>
+          <button class="date-nav-btn" id="next-month">→</button>
+        </div>
         <div id="stats-content">
           <div class="loading-state"><div class="spinner"></div><span>${t('statistics.calculating')}</span></div>
         </div>

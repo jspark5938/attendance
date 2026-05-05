@@ -27,11 +27,6 @@ export class CalendarAllPage {
 
   async render() {
     return `
-      <div class="page-header">
-        <div class="page-header-left">
-          <h1 class="page-title">${t('calendar.allTitle')}</h1>
-        </div>
-      </div>
       <div class="page-body">
         <div class="date-nav" style="justify-content:center; margin-bottom: var(--space-3);">
           <button class="date-nav-btn" id="prev-month">←</button>
@@ -223,7 +218,6 @@ export class CalendarAllPage {
             ${allClosed && !isToday ? 'opacity:0.7;' : ''}
           ">
           <div style="font-size:14px; font-weight:${isToday ? '700' : '500'};">${dayNum}</div>
-          ${holiday ? `<div style="font-size:8px; line-height:1.2; text-align:center; color:${isToday ? 'rgba(255,255,255,0.85)' : 'var(--color-absent)'}; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 2px;">${holiday}</div>` : ''}
           ${allClosed ? `
             <div style="font-size:9px; font-weight:700; background:${isToday ? 'rgba(255,255,255,0.2)' : 'var(--color-border)'}; color:${isToday ? 'white' : 'var(--color-text-muted)'}; border-radius:3px; padding:0 4px;">${t('calendar.closed')}</div>
           ` : someClosed ? `

@@ -14,7 +14,17 @@ import { escapeHtml } from '../utils/dom.js';
 import { todayStr, formatDateKo, strToDate } from '../utils/date.js';
 import { t, getMessages } from '../utils/i18n.js';
 
+// DB에 저장되는 한글 요일 순서 (변경 금지 — DB 매칭용)
 const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
+
+// 한글 요일 → locale 표시명 변환 (일=0, 월=1, ..., 토=6)
+const KO_DAY_TO_DOW = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+function localizeDay(koDay) {
+  const dow = KO_DAY_TO_DOW[koDay];
+  if (dow === undefined) return koDay;
+  return getMessages().date.daysShort[dow] ?? koDay;
+}
+
 const genderLabel = (g) => ({ male: t('groupDetail.genderMale'), female: t('groupDetail.genderFemale'), other: t('groupDetail.genderOther') }[g] || '—');
 
 export class GroupDetailPage {
@@ -45,23 +55,6 @@ export class GroupDetailPage {
     const summary = this._calcSummary();
 
     return `
-      <div class="page-header">
-        <div class="page-header-left">
-          <a href="#/groups" class="btn btn-ghost btn-icon" aria-label="${t('common.back')}" style="font-size:20px;">←</a>
-          <div>
-            <h1 class="page-title">
-              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${escapeHtml(this.group.color)};margin-right:8px;vertical-align:middle;"></span>
-              ${escapeHtml(this.group.name)}
-            </h1>
-            <div class="page-subtitle">${t('groupDetail.memberCount', { n: this.students.length })} · ${t('groupDetail.todayStatus', { monthDay: formatDateKo(this.today, { monthDay: true }) })}</div>
-          </div>
-        </div>
-        <div class="page-header-actions">
-          <a href="#/groups/${this.groupId}/attend" class="btn btn-primary">${t('groupDetail.attendCheck')}</a>
-          <button class="btn btn-secondary" id="add-student-btn">${t('groupDetail.addMember')}</button>
-        </div>
-      </div>
-
       <div class="page-body">
         <!-- 오늘 출석 요약 -->
         <div class="stat-cards-grid" style="margin-bottom: var(--space-5);">
@@ -163,12 +156,12 @@ export class GroupDetailPage {
 
   _studentRow(s) {
     const att = this.todayAttendance[s.id];
-    const days = (s.attendanceDays || []).join('·') || '—';
+    const days = (s.attendanceDays || []).map(localizeDay).join('·') || '—';
     const registered = s.registeredAt ? s.registeredAt.slice(0, 10).replace(/-/g, '.') : '—';
     const timeStr = (() => {
       if (!s.classTime) return '—';
       if (typeof s.classTime === 'string') return s.classTime || '—';
-      const parts = (s.attendanceDays || []).filter(d => s.classTime[d]).map(d => `${d} ${s.classTime[d]}`);
+      const parts = (s.attendanceDays || []).filter(d => s.classTime[d]).map(d => `${localizeDay(d)} ${s.classTime[d]}`);
       return parts.length ? parts.join(' / ') : '—';
     })();
 
@@ -177,9 +170,10 @@ export class GroupDetailPage {
           onmouseenter="this.style.background='var(--color-surface-2)'"
           onmouseleave="this.style.background=''">
         <td style="${tdStyle()}">${s.number}</td>
-        <td style="${tdStyle('left')}">
+        <td style="${tdStyle('left')}; max-width:120px;">
           <button class="btn btn-ghost view-student-btn" data-id="${s.id}"
-            style="font-weight:600; padding:2px 4px; text-align:left; color:var(--color-primary); text-decoration:underline; font-size:inherit;">
+            title="${escapeHtml(s.name)}"
+            style="font-weight:600; padding:2px 4px; text-align:left; color:var(--color-primary); text-decoration:underline; font-size:inherit; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block;">
             ${escapeHtml(s.name)}
           </button>
         </td>
@@ -418,7 +412,7 @@ export class GroupDetailPage {
             ${DAYS.map(d => {
               const checked = (s?.attendanceDays || []).includes(d);
               return `<button type="button" class="day-btn${checked ? ' day-btn-active' : ''}" data-day="${d}"
-                style="width:38px; height:38px; border-radius:var(--radius-full); border:1.5px solid ${checked ? 'var(--color-primary)' : 'var(--color-border)'}; background:${checked ? 'var(--color-primary)' : 'transparent'}; color:${checked ? 'white' : 'var(--color-text-muted)'}; font-size:13px; font-weight:600; cursor:pointer; transition:all var(--transition-fast); font-family:var(--font-family);">${d}</button>`;
+                style="width:38px; height:38px; border-radius:var(--radius-full); border:1.5px solid ${checked ? 'var(--color-primary)' : 'var(--color-border)'}; background:${checked ? 'var(--color-primary)' : 'transparent'}; color:${checked ? 'white' : 'var(--color-text-muted)'}; font-size:13px; font-weight:600; cursor:pointer; transition:all var(--transition-fast); font-family:var(--font-family);">${localizeDay(d)}</button>`;
             }).join('')}
           </div>
           <input type="hidden" id="s-days" value="${escapeHtml((s?.attendanceDays || []).join(','))}">
@@ -461,8 +455,8 @@ export class GroupDetailPage {
         <div id="contract-period-fields" style="display:none;">
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-3);">
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label" for="s-contract-start">${t('groupDetail.contractStartLabel')}</label>
-              <input type="date" id="s-contract-start" class="form-input" value="${today}">
+              <label class="form-label" for="s-period-start">${t('groupDetail.contractStartLabel')}</label>
+              <input type="date" id="s-period-start" class="form-input" value="${today}">
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label" for="s-contract-end">${t('groupDetail.contractEndDateLabel')}</label>
@@ -474,8 +468,8 @@ export class GroupDetailPage {
         <div id="contract-count-fields" style="display:none;">
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-3);">
             <div class="form-group" style="margin-bottom:0;">
-              <label class="form-label" for="s-contract-start">${t('groupDetail.contractStartLabel')}</label>
-              <input type="date" id="s-contract-start" class="form-input" value="${today}">
+              <label class="form-label" for="s-count-start">${t('groupDetail.contractStartLabel')}</label>
+              <input type="date" id="s-count-start" class="form-input" value="${today}">
             </div>
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label" for="s-contract-total">${t('groupDetail.contractTotalLabel')}</label>
@@ -497,6 +491,16 @@ export class GroupDetailPage {
   /** 요일 버튼 및 요일별 수업시간 입력 바인딩 (모달 열린 직후 호출) */
   _bindFormEvents(s = null) {
     setTimeout(() => {
+      // Android WebView에서 innerHTML로 생성된 date input의 .value가
+      // HTML value 어트리뷰트로 초기화되지 않는 경우가 있어 JS로 명시적으로 설정
+      const _today = todayStr();
+      const regInput = document.getElementById('s-registered');
+      if (regInput && !regInput.value) regInput.value = s?.registeredAt || _today;
+      const periodStart = document.getElementById('s-period-start');
+      if (periodStart && !periodStart.value) periodStart.value = _today;
+      const countStart = document.getElementById('s-count-start');
+      if (countStart && !countStart.value) countStart.value = _today;
+
       // 기존 classTime이 객체면 그대로, 구버전 문자열이면 빈 객체로
       const dayTimes = (typeof s?.classTime === 'object' && s?.classTime !== null)
         ? { ...s.classTime }
@@ -521,7 +525,7 @@ export class GroupDetailPage {
 
         container.innerHTML = selectedDays.map(d => `
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-            <span style="width:22px; font-size:13px; font-weight:700; color:var(--color-text); text-align:center;">${d}</span>
+            <span style="width:36px; font-size:13px; font-weight:700; color:var(--color-text); text-align:center;">${localizeDay(d)}</span>
             <input type="time" id="s-time-${d}" class="form-input"
               value="${dayTimes[d] || ''}"
               style="flex:1; max-width:130px; padding:5px 8px; font-size:13px;">
@@ -606,7 +610,9 @@ export class GroupDetailPage {
       // 계약 정보가 입력된 경우 함께 저장
       const contractType = document.getElementById('s-contract-type')?.value || 'none';
       if (contractType !== 'none') {
-        const startDate  = document.getElementById('s-contract-start')?.value || todayStr();
+        const startDate  = contractType === 'period'
+          ? (document.getElementById('s-period-start')?.value || todayStr())
+          : (document.getElementById('s-count-start')?.value  || todayStr());
         const endDate    = document.getElementById('s-contract-end')?.value || '';
         const totalCount = document.getElementById('s-contract-total')?.value
           ? Number(document.getElementById('s-contract-total').value) : null;
@@ -719,7 +725,42 @@ export class GroupDetailPage {
   }
 
   async _loadContractStatus() {
-    const allContracts = await ContractsDB.getByGroup(this.groupId);
+    let allContracts = await ContractsDB.getByGroup(this.groupId);
+
+    // Pre-pass: group by student to check if active contracts are exhausted
+    const byStudent = {};
+    for (const c of allContracts) {
+      if (!byStudent[c.studentId]) byStudent[c.studentId] = { active: null, pending: [] };
+      if (c.status === 'active') byStudent[c.studentId].active = c;
+      else if (c.status === 'pending') byStudent[c.studentId].pending.push(c);
+    }
+
+    let mutated = false;
+    for (const [studentId, { active, pending }] of Object.entries(byStudent)) {
+      if (!active || !pending.length) continue;
+
+      let exhausted = false;
+      if (active.type === 'period') {
+        exhausted = active.endDate && active.endDate < this.today;
+      } else if (active.type === 'count') {
+        const records = await AttendanceDB.getByStudent(studentId);
+        const used = records.filter(r =>
+          ['present', 'late', 'early'].includes(r.status) && r.date >= (active.startDate || '2000-01-01')
+        ).length;
+        exhausted = (active.totalCount || 0) - used <= 0;
+      }
+
+      if (exhausted) {
+        await ContractsDB.end(active.id);
+        pending.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        await ContractsDB.update(pending[0].id, { status: 'active' });
+        mutated = true;
+      }
+    }
+
+    // Reload if any contracts were activated
+    if (mutated) allContracts = await ContractsDB.getByGroup(this.groupId);
+
     this.contractMap = {};
     // Build map: studentId -> most recent active contract
     for (const c of allContracts) {
@@ -759,7 +800,9 @@ export class GroupDetailPage {
   async _showContractList(student) {
     const contracts = await ContractsDB.getByStudent(student.id);
     const active = contracts.find(c => c.status === 'active');
-    const history = contracts.filter(c => c.status !== 'active');
+    const pendingContracts = contracts.filter(c => c.status === 'pending')
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const history = contracts.filter(c => c.status === 'ended');
 
     // For count active contract, compute remaining
     let remaining = null;
@@ -791,6 +834,24 @@ export class GroupDetailPage {
         </div>`
       : `<div style="padding:var(--space-4); background:var(--color-surface-2); border-radius:var(--radius-md); color:var(--color-text-muted); font-size:13px; text-align:center; margin-bottom:var(--space-4);">${t('groupDetail.noActiveContract')}</div>`;
 
+    const pendingHtml = pendingContracts.length === 0 ? ''
+      : `<div style="margin-bottom:var(--space-4);">
+          <div style="font-size:11px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-2);">대기 중 (${pendingContracts.length})</div>
+          ${pendingContracts.map((c, idx) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:var(--space-3); border:1px dashed var(--color-border); border-radius:var(--radius-md); margin-bottom:6px; font-size:13px; background:var(--color-surface-2);">
+              <div>
+                <span style="font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; background:#e0e7ff; color:#3730a3; margin-right:6px;">대기 ${idx + 1}</span>
+                <span style="font-weight:600;">${c.type === 'period' ? t('dashboard.periodBadge') : t('dashboard.countBadge')}</span>
+                <span style="color:var(--color-text-muted); margin-left:6px;">
+                  ${c.type === 'period' ? `${c.startDate} ~ ${c.endDate}` : `${t('groupDetail.contractTotalLabel')} ${c.totalCount ?? 0} (${c.startDate}~)`}
+                </span>
+                ${c.memo ? `<div style="color:var(--color-text-muted); font-size:12px; margin-top:2px;">${escapeHtml(c.memo)}</div>` : ''}
+              </div>
+              <button class="btn btn-ghost btn-icon-sm del-contract-btn" data-id="${c.id}" title="${t('common.delete')}" style="color:var(--color-absent); flex-shrink:0;">✕</button>
+            </div>
+          `).join('')}
+        </div>`;
+
     const historyHtml = history.length === 0 ? ''
       : `<div style="margin-top:var(--space-2);">
           <div style="font-size:11px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-2);">${t('groupDetail.contractHistHeader', { n: history.length })}</div>
@@ -817,6 +878,7 @@ export class GroupDetailPage {
         <button class="btn btn-primary btn-sm" id="new-contract-btn" style="margin-bottom:var(--space-4); width:100%;">${t('groupDetail.newContractBtn')}</button>
         <div style="font-size:11px; font-weight:700; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:var(--space-2);">${t('groupDetail.activeContractLabel')}</div>
         ${activeHtml}
+        ${pendingHtml}
         ${historyHtml}
       `,
       hideConfirm: true,
@@ -916,12 +978,17 @@ export class GroupDetailPage {
           if (isEdit) {
             await ContractsDB.update(contract.id, { type: contractType, startDate, endDate, totalCount, memo });
           } else {
-            // End any existing active contract first
             const existing = await ContractsDB.getByStudent(student.id);
-            for (const c of existing) {
-              if (c.status === 'active') await ContractsDB.end(c.id);
+            const activeContract = existing.find(c => c.status === 'active');
+
+            if (activeContract) {
+              // Active contract exists → always queue new contract as pending
+              await ContractsDB.create({ studentId: student.id, groupId: this.groupId, type: contractType, startDate, endDate, totalCount, memo, status: 'pending' });
+              Toast.success('계약이 대기열에 등록됐습니다. 현재 계약 소진 후 자동 활성화됩니다.');
+            } else {
+              // No active contract → create as active immediately
+              await ContractsDB.create({ studentId: student.id, groupId: this.groupId, type: contractType, startDate, endDate, totalCount, memo });
             }
-            await ContractsDB.create({ studentId: student.id, groupId: this.groupId, type: contractType, startDate, endDate, totalCount, memo });
           }
           await this._loadContractStatus();
           onBack();

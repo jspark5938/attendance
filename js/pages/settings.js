@@ -49,11 +49,6 @@ export class SettingsPage {
     ];
 
     return `
-      <div class="page-header">
-        <div class="page-header-left">
-          <h1 class="page-title">${t('settings.title')}</h1>
-        </div>
-      </div>
       <div class="page-body">
 
         <!-- User profile / Guest mode -->
@@ -87,16 +82,13 @@ export class SettingsPage {
 
         <!-- Language selector -->
         <div class="card" style="margin-bottom: var(--space-4);">
-          <div class="card-header">
-            <div class="card-title">${t('settings.language')}</div>
-          </div>
-          <div class="card-body" style="display:flex; flex-direction:column; gap:var(--space-3);">
-            ${localeOptions.map(opt => `
-              <label style="display:flex; align-items:center; gap:var(--space-3); cursor:pointer;">
-                <input type="radio" name="locale-radio" value="${opt.value}" ${savedLocale === opt.value ? 'checked' : ''} style="width:18px; height:18px; cursor:pointer;">
-                <span style="font-size:15px;">${opt.label}</span>
-              </label>
-            `).join('')}
+          <div class="card-body" style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);">
+            <span style="font-weight:600; font-size:14px;">${t('settings.language')}</span>
+            <select id="locale-select" class="form-select" style="width:auto; min-width:130px; padding:6px 10px; font-size:14px;">
+              ${localeOptions.map(opt => `
+                <option value="${opt.value}" ${savedLocale === opt.value ? 'selected' : ''}>${opt.label}</option>
+              `).join('')}
+            </select>
           </div>
         </div>
 
@@ -166,10 +158,8 @@ export class SettingsPage {
       document.getElementById('migrate-legacy-btn')?.addEventListener('click', () => this._migrateLegacy());
     }
 
-    document.querySelectorAll('input[name="locale-radio"]').forEach(radio => {
-      radio.addEventListener('change', async (e) => {
-        await setLocale(e.target.value);
-      });
+    document.getElementById('locale-select')?.addEventListener('change', async (e) => {
+      await setLocale(e.target.value);
     });
   }
 

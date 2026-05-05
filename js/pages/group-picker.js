@@ -25,11 +25,6 @@ export class GroupPickerPage {
     const label = t(labelKey);
 
     return `
-      <div class="page-header">
-        <div class="page-header-left">
-          <h1 class="page-title">${icon} ${label}</h1>
-        </div>
-      </div>
       <div class="page-body">
         ${groups.length === 0 ? `
           <div class="empty-state">

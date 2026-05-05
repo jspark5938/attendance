@@ -16,7 +16,7 @@ export const ContractsDB = {
   async get(id) {
     return getByKey('contracts', id);
   },
-  async create({ studentId, groupId, type, startDate, endDate, totalCount, memo }) {
+  async create({ studentId, groupId, type, startDate, endDate, totalCount, memo, status }) {
     const contract = {
       id: uuid(),
       studentId,
@@ -26,7 +26,7 @@ export const ContractsDB = {
       endDate: endDate || '',
       totalCount: totalCount ? Number(totalCount) : null,
       memo: memo || '',
-      status: 'active',
+      status: status || 'active',
       createdAt: new Date().toISOString(),
     };
     await put('contracts', contract);

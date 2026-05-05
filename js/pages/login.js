@@ -22,8 +22,7 @@ export class LoginPage {
         <div class="login-container">
           <!-- Brand -->
           <div class="login-brand">
-            <div class="login-logo">출</div>
-            <h1 class="login-title">출석부</h1>
+            <img src="assets/icons/icon-512.png" alt="Simple Attend" class="login-logo">
             <p class="login-subtitle">${t('login.subtitle')}</p>
           </div>
 

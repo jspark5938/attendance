@@ -61,6 +61,8 @@ const Modal = {
     confirmBtn.textContent = confirmText;
     confirmBtn.className = `btn modal-confirm ${danger ? 'btn-danger' : 'btn-primary'}`;
     cancelBtn.textContent  = cancelText;
+    cancelBtn.onclick      = null;
+    cancelBtn._resolveRef  = null;
 
     if (hideCancel)  cancelBtn.style.display = 'none';
     else             cancelBtn.style.display = '';
