@@ -225,14 +225,15 @@ body {
 .bottom-nav {
   display: none;
   position: fixed;
-  top: env(safe-area-inset-top);
+  bottom: 0;
   left: 0;
   right: 0;
-  height: 56px;
+  height: calc(56px + env(safe-area-inset-bottom));
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   z-index: var(--z-bottom-nav);
   padding: 0;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .bottom-nav-inner {
@@ -271,12 +272,12 @@ body {
 .bottom-nav-item::after {
   content: '';
   position: absolute;
-  bottom: 0;
+  top: 0;
   left: 20%;
   right: 20%;
   height: 2px;
   background: var(--color-primary);
-  border-radius: var(--radius-full) var(--radius-full) 0 0;
+  border-radius: 0 0 var(--radius-full) var(--radius-full);
   opacity: 0;
   transition: opacity var(--transition-fast);
 }

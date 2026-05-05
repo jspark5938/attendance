@@ -49,15 +49,10 @@
     max-width: 100%;
   }
 
-  /* Push page content below fixed tab bar + status bar */
+  /* Push page content above fixed bottom nav + safe area */
   #app-content {
-    padding-top: calc(56px + env(safe-area-inset-top));
-  }
-
-  /* Sticky page-header should sit below the fixed tab bar */
-  .page-header {
-    padding: var(--space-3) var(--space-4);
-    top: calc(56px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
   }
 
   .page-body {
@@ -65,7 +60,7 @@
   }
 
   #toast-container {
-    bottom: var(--space-6);
+    bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-3));
   }
 
   /* Grids collapse to 1 or 2 columns */
@@ -287,16 +282,13 @@
     width: 100%;
   }
 
-  /* Push content below fixed tab bar + status bar */
+  /* Push content above fixed bottom nav */
   #app-content {
-    padding-top: calc(56px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
     overflow-x: clip;
     max-width: 100%;
     width: 100%;
-  }
-
-  .page-header {
-    top: calc(56px + env(safe-area-inset-top));
   }
 
   .page-body {
@@ -304,7 +296,7 @@
   }
 
   #toast-container {
-    bottom: var(--space-4);
+    bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-2));
   }
 
   /* Keep cards from overflowing in landscape */
