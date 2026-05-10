@@ -35,7 +35,7 @@ export const ExportService = {
     const BOM = '\uFEFF'; // UTF-8 BOM for Excel compatibility
     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const filename = t('export.csvFilename', { name: group.name, start: startDate, end: endDate }) + '.csv';
-    _download(blob, filename);
+    await _saveFile(blob, filename);
   },
 
   /**
@@ -115,7 +115,9 @@ export const ExportService = {
     });
 
     const filename = t('export.pdfFilename', { name: group.name, start: startDate, end: endDate }) + '.pdf';
-    doc.save(filename);
+    // doc.save()는 Android WebView에서 blob URL 네비게이션을 유발하므로 사용 금지
+    const blob = doc.output('blob');
+    await _saveFile(blob, filename);
   },
 };
 
@@ -132,8 +134,46 @@ function _dateRange(startDate, endDate) {
   return dates;
 }
 
-/** Helper: trigger browser file download */
-function _download(blob, filename) {
+/**
+ * 파일 저장 헬퍼
+ *
+ * Android (Capacitor): blob URL 클릭은 WebView 네비게이션을 유발해 앱이 freeze됨.
+ * 대신 Filesystem 플러그인으로 캐시에 쓴 뒤 Share 플러그인으로 공유 시트를 띄운다.
+ *
+ * 웹: 기존 blob URL + <a download> 방식 유지.
+ */
+async function _saveFile(blob, filename) {
+  const isNative = typeof window.Capacitor !== 'undefined' && window.Capacitor?.isNativePlatform?.();
+
+  if (isNative) {
+    const Filesystem = window.Capacitor.Plugins.Filesystem;
+    const Share      = window.Capacitor.Plugins.Share;
+
+    if (!Filesystem || !Share) {
+      throw new Error('파일 저장 플러그인을 찾을 수 없습니다. 앱을 업데이트해주세요.');
+    }
+
+    // Blob → base64
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.onerror   = reject;
+      reader.readAsDataURL(blob);
+    });
+
+    // 캐시 디렉토리에 저장 (권한 불필요)
+    const { uri } = await Filesystem.writeFile({
+      path:      filename,
+      data:      base64,
+      directory: 'CACHE',
+    });
+
+    // 네이티브 공유 시트 표시
+    await Share.share({ url: uri, dialogTitle: filename });
+    return;
+  }
+
+  // 웹: blob URL + <a download>
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

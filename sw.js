@@ -47,6 +47,10 @@ const SHELL_ASSETS = [
   '/js/utils/dom.js',
   '/js/utils/i18n.js',
   '/js/utils/holidays.js',
+  '/js/firebase-sdk/firebase-app.js',
+  '/js/firebase-sdk/firebase-auth.js',
+  '/js/firebase-sdk/firebase-firestore.js',
+  '/js/firebase-sdk/firebase-analytics.js',
 ];
 
 const CDN_ASSETS = [

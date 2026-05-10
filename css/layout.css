@@ -13,6 +13,8 @@ html {
   -webkit-text-size-adjust: 100%;
   /* clip: sticky를 깨뜨리지 않으면서 가로 overflow 차단 */
   overflow-x: clip;
+  /* 네이티브 위젯(select 등)이 항상 라이트 모드 색상(검정 글자)을 사용하도록 강제 */
+  color-scheme: light;
 }
 
 body {

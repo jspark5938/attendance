@@ -61,6 +61,34 @@ export class ExportPage {
   async mount() {
     document.getElementById('export-csv-btn')?.addEventListener('click', () => this._doExport('csv'));
     document.getElementById('export-pdf-btn')?.addEventListener('click', () => this._doExport('pdf'));
+    this._initDatePickers();
+  }
+
+  _initDatePickers() {
+    if (!window.flatpickr) return;
+    const today = todayStr();
+
+    // fpEnd는 fpStart의 onChange에서 참조되므로 let으로 선언
+    let fpEnd;
+    const fpStart = window.flatpickr('#start-date', {
+      locale: 'ko',
+      maxDate: today,
+      onChange: ([date], dateStr) => {
+        if (date && fpEnd) fpEnd.set('minDate', dateStr);
+      },
+    });
+
+    fpEnd = window.flatpickr('#end-date', {
+      locale: 'ko',
+      maxDate: today,
+      minDate: document.getElementById('start-date')?.value || undefined,
+      onChange: ([date], dateStr) => {
+        if (date && fpStart) fpStart.set('maxDate', dateStr);
+      },
+    });
+
+    this._fpStart = fpStart;
+    this._fpEnd   = fpEnd;
   }
 
   async _doExport(type) {
@@ -82,5 +110,8 @@ export class ExportPage {
     }
   }
 
-  destroy() {}
+  destroy() {
+    this._fpStart?.destroy();
+    this._fpEnd?.destroy();
+  }
 }

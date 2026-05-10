@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { initializeFirestore, persistentLocalCache, persistentSingleTabManager } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { getAnalytics } from 'firebase/analytics';
 import { firebaseConfig } from './firebase-config.js';
 
 const app = initializeApp(firebaseConfig);
@@ -13,4 +14,5 @@ export const db = initializeFirestore(app, {
 });
 
 export const auth = getAuth(app);
+export const analytics = getAnalytics(app);
 export { app };

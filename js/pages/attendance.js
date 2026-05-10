@@ -22,6 +22,8 @@ export class AttendancePage {
     this.attendanceMap = {}; // { studentId: record }
     this.contractMap = {}; // studentId → active contract
     this._saving = new Set(); // prevent double-saves
+    this._pendingChanges = new Map(); // studentId → {type:'set',record} | {type:'del'}
+    this._attendanceCache = {}; // studentId → record[] (built in _loadContracts)
   }
 
   async render() {
@@ -93,6 +95,12 @@ export class AttendancePage {
 
         <!-- Hidden flatpickr input -->
         <input type="text" id="date-picker-input" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;" readonly>
+
+        <!-- 미저장 변경사항 저장 바 -->
+        <div id="attendance-save-bar" style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:10px 16px; z-index:200; gap:12px; align-items:center; box-shadow:var(--shadow-md); white-space:nowrap;">
+          <span id="save-bar-label" style="font-size:13px; color:var(--color-text-muted);"></span>
+          <button class="btn btn-primary btn-sm" id="save-attendance-btn">저장</button>
+        </div>
       </div>
     `;
   }
@@ -174,6 +182,18 @@ export class AttendancePage {
       else if (c.status === 'pending') byStudent[c.studentId].pending.push(c);
     }
 
+    // Fetch all group attendance ONCE if any count-type active contract exists
+    // Builds _attendanceCache for use in _checkAndActivatePending (avoids per-click reads)
+    const hasCountActive = Object.values(byStudent).some(({ active }) => active?.type === 'count');
+    if (hasCountActive) {
+      const allRecords = await AttendanceDB.getByGroup(this.groupId);
+      this._attendanceCache = {};
+      allRecords.forEach(r => {
+        if (!this._attendanceCache[r.studentId]) this._attendanceCache[r.studentId] = [];
+        this._attendanceCache[r.studentId].push(r);
+      });
+    }
+
     let mutated = false;
     const today = todayStr();
     for (const [studentId, { active, pending }] of Object.entries(byStudent)) {
@@ -183,7 +203,7 @@ export class AttendancePage {
       if (active.type === 'period') {
         exhausted = active.endDate && active.endDate < today;
       } else if (active.type === 'count') {
-        const records = await AttendanceDB.getByStudent(studentId);
+        const records = this._attendanceCache[studentId] || [];
         const used = records.filter(r =>
           ['present', 'late', 'early'].includes(r.status) && r.date >= (active.startDate || '2000-01-01')
         ).length;
@@ -214,7 +234,12 @@ export class AttendancePage {
     const active = this.contractMap[studentId];
     if (!active || active.type !== 'count') return;
 
-    const records = await AttendanceDB.getByStudent(studentId);
+    // Use cached records (built in _loadContracts) + today's in-memory record
+    // This avoids a Firestore read on every attendance mark
+    const cached = this._attendanceCache[studentId] || [];
+    const todayRec = this.attendanceMap[studentId];
+    const records = [...cached.filter(r => r.date !== this.date), ...(todayRec ? [todayRec] : [])];
+
     const used = records.filter(r =>
       ['present', 'late', 'early'].includes(r.status) && r.date >= (active.startDate || '2000-01-01')
     ).length;
@@ -257,11 +282,16 @@ export class AttendancePage {
       });
     }
 
-    // Date navigation
-    document.getElementById('prev-date')?.addEventListener('click', () => {
+    // 저장 버튼
+    document.getElementById('save-attendance-btn')?.addEventListener('click', () => this._flushPending());
+
+    // Date navigation — auto-save pending changes before navigating
+    document.getElementById('prev-date')?.addEventListener('click', async () => {
+      await this._flushPending();
       window.location.hash = `#/groups/${this.groupId}/attend?date=${shiftDate(this.date, -1)}`;
     });
-    document.getElementById('next-date')?.addEventListener('click', () => {
+    document.getElementById('next-date')?.addEventListener('click', async () => {
+      await this._flushPending();
       window.location.hash = `#/groups/${this.groupId}/attend?date=${shiftDate(this.date, 1)}`;
     });
 
@@ -273,8 +303,9 @@ export class AttendancePage {
         defaultDate: this.date,
         locale: 'ko',
         maxDate: 'today',
-        onChange: ([date]) => {
+        onChange: async ([date]) => {
           if (date) {
+            await this._flushPending();
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
             const d = String(date.getDate()).padStart(2, '0');
@@ -320,31 +351,36 @@ export class AttendancePage {
       }
     }
 
-    // Update local map
-    const student = this.students.find(s => s.id === studentId);
-
     try {
       const currentRec = this.attendanceMap[studentId];
       const isToggle = currentRec?.status === status;
 
       if (isToggle) {
-        // Toggle off: remove record
-        await AttendanceDB.remove(studentId, this.date);
+        // Toggle off: stage for deletion
         delete this.attendanceMap[studentId];
+        this._pendingChanges.set(studentId, { type: 'del' });
       } else {
-        const rec = await AttendanceDB.set({
+        // Stage new record (no Firestore write yet)
+        const rec = {
+          id: `${studentId}_${this.date}`,
           studentId,
           groupId: this.groupId,
           date: this.date,
           status,
-        });
+          note: '',
+          absentType: null,
+          makeupDate: null,
+          markedAt: new Date().toISOString(),
+        };
         this.attendanceMap[studentId] = rec;
-        // Check if count-based contract is exhausted → activate pending
+        this._pendingChanges.set(studentId, { type: 'set', record: rec });
+        // Check if count-based contract is exhausted → activate pending (uses in-memory cache)
         if (['present', 'late', 'early'].includes(status)) {
           await this._checkAndActivatePending(studentId);
         }
       }
       this._updateSummary();
+      this._showSaveBar();
     } catch (e) {
       Toast.error(t('messages.saveFailed'));
     } finally {
@@ -352,7 +388,42 @@ export class AttendancePage {
     }
   }
 
+  _showSaveBar() {
+    const bar = document.getElementById('attendance-save-bar');
+    if (!bar) return;
+    if (this._pendingChanges.size > 0) {
+      bar.style.display = 'flex';
+      const label = document.getElementById('save-bar-label');
+      if (label) label.textContent = `${this._pendingChanges.size}명 미저장`;
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+
+  async _flushPending() {
+    if (!this._pendingChanges.size) return;
+    const toSet = [];
+    const toDel = [];
+    for (const [studentId, change] of this._pendingChanges) {
+      if (change.type === 'set') toSet.push(change.record);
+      else toDel.push(studentId);
+    }
+    try {
+      await Promise.all([
+        toSet.length ? AttendanceDB.bulkSet(toSet) : null,
+        ...toDel.map(id => AttendanceDB.remove(id, this.date)),
+      ].filter(Boolean));
+      this._pendingChanges.clear();
+      this._showSaveBar();
+    } catch (e) {
+      Toast.error(t('messages.saveFailed'));
+    }
+  }
+
   async _markAll(status) {
+    // Bulk mark overwrites any individual pending changes
+    this._pendingChanges.clear();
+
     const records = this.students.map(s => ({
       studentId: s.id,
       groupId: this.groupId,
@@ -370,12 +441,16 @@ export class AttendancePage {
         btn.setAttribute('aria-pressed', btn.dataset.status === status ? 'true' : 'false');
       });
       this._updateSummary();
+      this._showSaveBar();
     } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   async _markScheduled(status) {
     const targets = this._scheduled || [];
     if (!targets.length) return;
+    // Remove scheduled students from pending (bulk mark takes precedence)
+    targets.forEach(s => this._pendingChanges.delete(s.id));
+
     const records = targets.map(s => ({ studentId: s.id, groupId: this.groupId, date: this.date, status }));
     try {
       await AttendanceDB.bulkSet(records);
@@ -389,6 +464,7 @@ export class AttendancePage {
         });
       });
       this._updateSummary();
+      this._showSaveBar();
     } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
@@ -400,6 +476,9 @@ export class AttendancePage {
       confirmText: t('messages.clearConfirmBtn'),
     });
     if (!ok) return;
+
+    // Discard all individual pending changes — clear all takes precedence
+    this._pendingChanges.clear();
 
     try {
       const results = await Promise.allSettled(
@@ -416,6 +495,7 @@ export class AttendancePage {
         btn.setAttribute('aria-pressed', 'false');
       });
       this._updateSummary();
+      this._showSaveBar();
     } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
@@ -522,19 +602,26 @@ export class AttendancePage {
     this._saving.add(student.id);
 
     try {
-      const rec = await AttendanceDB.set({
+      // Stage record (no immediate Firestore write)
+      const rec = {
+        id: `${student.id}_${this.date}`,
         studentId: student.id,
         groupId: this.groupId,
         date: this.date,
         status: 'absent',
+        note: '',
         absentType,
-        makeupDate: makeupDate || null,
-      });
+        makeupDate: (absentType === 'makeup') ? (makeupDate || null) : null,
+        markedAt: new Date().toISOString(),
+      };
       this.attendanceMap[student.id] = rec;
+      this._pendingChanges.set(student.id, { type: 'set', record: rec });
 
       if (absentType === 'extend') {
         const contract = this.contractMap[student.id];
         if (contract) {
+          // Flush pending first so the absence record is saved before extending
+          await this._flushPending();
           const days = daysToNextClass(contract.endDate, student.attendanceDays);
           await ContractsDB.extendEndDate(contract.id, days);
           await this._loadContracts();
@@ -555,6 +642,7 @@ export class AttendancePage {
       }
 
       this._updateSummary();
+      this._showSaveBar();
 
       const labels = {
         normal:    t('calendar.absentLabelNormal'),

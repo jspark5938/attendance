@@ -5,6 +5,7 @@ import android.view.Window;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import androidx.activity.EdgeToEdge;
+import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
@@ -15,6 +16,8 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // 스플래시 스크린을 super.onCreate 이전에 설치해야 올바르게 dismiss됨
+        SplashScreen.installSplashScreen(this);
         // super.onCreate 이전에 호출해야 ActionBar가 생성되지 않음
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         EdgeToEdge.enable(this);

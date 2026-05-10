@@ -97,13 +97,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
 
-  <!-- Firebase importmap (maps bare specifiers to gstatic CDN) -->
+  <!-- Firebase importmap (로컬 번들 사용 — CDN 의존성 제거로 첫 실행 로딩 문제 방지) -->
   <script type="importmap">
   {
     "imports": {
-      "firebase/app": "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js",
-      "firebase/auth": "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js",
-      "firebase/firestore": "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js"
+      "firebase/app":       "/js/firebase-sdk/firebase-app.js",
+      "firebase/auth":      "/js/firebase-sdk/firebase-auth.js",
+      "firebase/firestore": "/js/firebase-sdk/firebase-firestore.js",
+      "firebase/analytics": "/js/firebase-sdk/firebase-analytics.js",
+      "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js":       "/js/firebase-sdk/firebase-app.js",
+      "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js":      "/js/firebase-sdk/firebase-auth.js",
+      "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js": "/js/firebase-sdk/firebase-firestore.js",
+      "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js": "/js/firebase-sdk/firebase-analytics.js"
     }
   }
   </script>

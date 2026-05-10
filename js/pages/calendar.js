@@ -162,7 +162,6 @@ export class CalendarPage {
           ${isClosed && !isToday ? 'opacity:0.7;' : ''}
         ">
           <div style="font-size: 14px; font-weight: ${isToday ? '700' : '500'};">${dayNum}</div>
-          ${holiday ? `<div style="font-size:8px; line-height:1.2; text-align:center; color:${isToday ? 'rgba(255,255,255,0.85)' : 'var(--color-absent)'}; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 2px;">${holiday}</div>` : ''}
           ${isClosed ? `
             <div style="font-size:9px; font-weight:700; color:${isToday ? 'rgba(255,255,255,0.9)' : 'var(--color-text-muted)'}; background:${isToday ? 'rgba(255,255,255,0.2)' : 'var(--color-border)'}; border-radius:3px; padding:0 4px; white-space:nowrap;">${t('calendar.closed')}</div>
           ` : hasData && totalStudents > 0 ? `

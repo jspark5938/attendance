@@ -735,6 +735,18 @@ export class GroupDetailPage {
       else if (c.status === 'pending') byStudent[c.studentId].pending.push(c);
     }
 
+    // Fetch all group attendance ONCE if any count-type contract exists
+    // (replaces per-student getByStudent calls in the loops below)
+    const hasCountContracts = allContracts.some(c => c.type === 'count');
+    const recordsByStudent = {};
+    if (hasCountContracts) {
+      const allRecords = await AttendanceDB.getByGroup(this.groupId);
+      allRecords.forEach(r => {
+        if (!recordsByStudent[r.studentId]) recordsByStudent[r.studentId] = [];
+        recordsByStudent[r.studentId].push(r);
+      });
+    }
+
     let mutated = false;
     for (const [studentId, { active, pending }] of Object.entries(byStudent)) {
       if (!active || !pending.length) continue;
@@ -743,7 +755,7 @@ export class GroupDetailPage {
       if (active.type === 'period') {
         exhausted = active.endDate && active.endDate < this.today;
       } else if (active.type === 'count') {
-        const records = await AttendanceDB.getByStudent(studentId);
+        const records = recordsByStudent[studentId] || [];
         const used = records.filter(r =>
           ['present', 'late', 'early'].includes(r.status) && r.date >= (active.startDate || '2000-01-01')
         ).length;
@@ -771,11 +783,11 @@ export class GroupDetailPage {
         }
       }
     }
-    // Compute remaining for count-based
+    // Compute remaining for count-based (reuse already-fetched group records)
     for (const studentId of Object.keys(this.contractMap)) {
       const c = this.contractMap[studentId];
       if (c.type !== 'count') continue;
-      const records = await AttendanceDB.getByStudent(studentId);
+      const records = recordsByStudent[studentId] || [];
       const startDate = c.startDate || '2000-01-01';
       const used = records.filter(r =>
         ['present', 'late', 'early'].includes(r.status) && r.date >= startDate

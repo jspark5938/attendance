@@ -26,6 +26,7 @@ import { SettingsPage }     from './pages/settings.js';
 import { PremiumPage }      from './pages/premium.js';
 import { GroupPickerPage }   from './pages/group-picker.js';
 import { CalendarAllPage }  from './pages/calendar-all.js';
+import { ExportPage }       from './pages/export.js';
 
 let _router = null;
 let _appInitialized = false;
@@ -76,6 +77,7 @@ async function _initApp() {
   _router.register('/groups/:id/attend', (p, q) => new AttendancePage(p, q));
   _router.register('/groups/:id/calendar', (p) => new CalendarPage(p));
   _router.register('/groups/:id/stats', (p) => new StatisticsPage(p));
+  _router.register('/groups/:id/export', (p) => new ExportPage(p));
   _router.register('/calendar', () => new CalendarAllPage());
   _router.register('/stats',    () => new GroupPickerPage({ mode: 'stats' }));
   _router.register('/settings', () => new SettingsPage());
