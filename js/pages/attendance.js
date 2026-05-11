@@ -22,7 +22,6 @@ export class AttendancePage {
     this.attendanceMap = {}; // { studentId: record }
     this.contractMap = {}; // studentId → active contract
     this._saving = new Set(); // prevent double-saves
-    this._pendingChanges = new Map(); // studentId → {type:'set',record} | {type:'del'}
     this._attendanceCache = {}; // studentId → record[] (built in _loadContracts)
   }
 
@@ -95,12 +94,6 @@ export class AttendancePage {
 
         <!-- Hidden flatpickr input -->
         <input type="text" id="date-picker-input" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;" readonly>
-
-        <!-- 미저장 변경사항 저장 바 -->
-        <div id="attendance-save-bar" style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:10px 16px; z-index:200; gap:12px; align-items:center; box-shadow:var(--shadow-md); white-space:nowrap;">
-          <span id="save-bar-label" style="font-size:13px; color:var(--color-text-muted);"></span>
-          <button class="btn btn-primary btn-sm" id="save-attendance-btn">저장</button>
-        </div>
       </div>
     `;
   }
@@ -282,16 +275,11 @@ export class AttendancePage {
       });
     }
 
-    // 저장 버튼
-    document.getElementById('save-attendance-btn')?.addEventListener('click', () => this._flushPending());
-
-    // Date navigation — auto-save pending changes before navigating
-    document.getElementById('prev-date')?.addEventListener('click', async () => {
-      await this._flushPending();
+    // Date navigation
+    document.getElementById('prev-date')?.addEventListener('click', () => {
       window.location.hash = `#/groups/${this.groupId}/attend?date=${shiftDate(this.date, -1)}`;
     });
-    document.getElementById('next-date')?.addEventListener('click', async () => {
-      await this._flushPending();
+    document.getElementById('next-date')?.addEventListener('click', () => {
       window.location.hash = `#/groups/${this.groupId}/attend?date=${shiftDate(this.date, 1)}`;
     });
 
@@ -303,9 +291,8 @@ export class AttendancePage {
         defaultDate: this.date,
         locale: 'ko',
         maxDate: 'today',
-        onChange: async ([date]) => {
+        onChange: ([date]) => {
           if (date) {
-            await this._flushPending();
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
             const d = String(date.getDate()).padStart(2, '0');
@@ -356,31 +343,23 @@ export class AttendancePage {
       const isToggle = currentRec?.status === status;
 
       if (isToggle) {
-        // Toggle off: stage for deletion
+        // Toggle off: remove record
+        await AttendanceDB.remove(studentId, this.date);
         delete this.attendanceMap[studentId];
-        this._pendingChanges.set(studentId, { type: 'del' });
       } else {
-        // Stage new record (no Firestore write yet)
-        const rec = {
-          id: `${studentId}_${this.date}`,
+        const rec = await AttendanceDB.set({
           studentId,
           groupId: this.groupId,
           date: this.date,
           status,
-          note: '',
-          absentType: null,
-          makeupDate: null,
-          markedAt: new Date().toISOString(),
-        };
+        });
         this.attendanceMap[studentId] = rec;
-        this._pendingChanges.set(studentId, { type: 'set', record: rec });
-        // Check if count-based contract is exhausted → activate pending (uses in-memory cache)
+        // Check if count-based contract is exhausted → activate pending
         if (['present', 'late', 'early'].includes(status)) {
           await this._checkAndActivatePending(studentId);
         }
       }
       this._updateSummary();
-      this._showSaveBar();
     } catch (e) {
       Toast.error(t('messages.saveFailed'));
     } finally {
@@ -388,41 +367,7 @@ export class AttendancePage {
     }
   }
 
-  _showSaveBar() {
-    const bar = document.getElementById('attendance-save-bar');
-    if (!bar) return;
-    if (this._pendingChanges.size > 0) {
-      bar.style.display = 'flex';
-      const label = document.getElementById('save-bar-label');
-      if (label) label.textContent = `${this._pendingChanges.size}명 미저장`;
-    } else {
-      bar.style.display = 'none';
-    }
-  }
-
-  async _flushPending() {
-    if (!this._pendingChanges.size) return;
-    const toSet = [];
-    const toDel = [];
-    for (const [studentId, change] of this._pendingChanges) {
-      if (change.type === 'set') toSet.push(change.record);
-      else toDel.push(studentId);
-    }
-    try {
-      await Promise.all([
-        toSet.length ? AttendanceDB.bulkSet(toSet) : null,
-        ...toDel.map(id => AttendanceDB.remove(id, this.date)),
-      ].filter(Boolean));
-      this._pendingChanges.clear();
-      this._showSaveBar();
-    } catch (e) {
-      Toast.error(t('messages.saveFailed'));
-    }
-  }
-
   async _markAll(status) {
-    // Bulk mark overwrites any individual pending changes
-    this._pendingChanges.clear();
 
     const records = this.students.map(s => ({
       studentId: s.id,
@@ -441,15 +386,12 @@ export class AttendancePage {
         btn.setAttribute('aria-pressed', btn.dataset.status === status ? 'true' : 'false');
       });
       this._updateSummary();
-      this._showSaveBar();
     } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
   async _markScheduled(status) {
     const targets = this._scheduled || [];
     if (!targets.length) return;
-    // Remove scheduled students from pending (bulk mark takes precedence)
-    targets.forEach(s => this._pendingChanges.delete(s.id));
 
     const records = targets.map(s => ({ studentId: s.id, groupId: this.groupId, date: this.date, status }));
     try {
@@ -464,7 +406,6 @@ export class AttendancePage {
         });
       });
       this._updateSummary();
-      this._showSaveBar();
     } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
@@ -476,9 +417,6 @@ export class AttendancePage {
       confirmText: t('messages.clearConfirmBtn'),
     });
     if (!ok) return;
-
-    // Discard all individual pending changes — clear all takes precedence
-    this._pendingChanges.clear();
 
     try {
       const results = await Promise.allSettled(
@@ -495,7 +433,6 @@ export class AttendancePage {
         btn.setAttribute('aria-pressed', 'false');
       });
       this._updateSummary();
-      this._showSaveBar();
     } catch (e) { Toast.error(t('messages.saveFailed')); }
   }
 
@@ -602,26 +539,19 @@ export class AttendancePage {
     this._saving.add(student.id);
 
     try {
-      // Stage record (no immediate Firestore write)
-      const rec = {
-        id: `${student.id}_${this.date}`,
+      const rec = await AttendanceDB.set({
         studentId: student.id,
         groupId: this.groupId,
         date: this.date,
         status: 'absent',
-        note: '',
         absentType,
         makeupDate: (absentType === 'makeup') ? (makeupDate || null) : null,
-        markedAt: new Date().toISOString(),
-      };
+      });
       this.attendanceMap[student.id] = rec;
-      this._pendingChanges.set(student.id, { type: 'set', record: rec });
 
       if (absentType === 'extend') {
         const contract = this.contractMap[student.id];
         if (contract) {
-          // Flush pending first so the absence record is saved before extending
-          await this._flushPending();
           const days = daysToNextClass(contract.endDate, student.attendanceDays);
           await ContractsDB.extendEndDate(contract.id, days);
           await this._loadContracts();
@@ -642,7 +572,6 @@ export class AttendancePage {
       }
 
       this._updateSummary();
-      this._showSaveBar();
 
       const labels = {
         normal:    t('calendar.absentLabelNormal'),
