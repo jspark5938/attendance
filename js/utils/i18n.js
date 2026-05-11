@@ -12,10 +12,11 @@
 
 import koMessages from '../locales/ko.js';
 import enMessages from '../locales/en.js';
+import jaMessages from '../locales/ja.js';
 import { getByKey, put } from '../db/database.js';
 
-const LOCALES = { ko: koMessages, en: enMessages };
-export const SUPPORTED_LOCALES = ['ko', 'en'];
+const LOCALES = { ko: koMessages, en: enMessages, ja: jaMessages };
+export const SUPPORTED_LOCALES = ['ko', 'en', 'ja'];
 
 let _locale   = 'ko';
 let _messages = koMessages;

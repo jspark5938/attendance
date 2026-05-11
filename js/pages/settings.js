@@ -46,6 +46,7 @@ export class SettingsPage {
       { value: 'system', label: t('settings.systemLanguage') },
       { value: 'ko',     label: '한국어' },
       { value: 'en',     label: 'English' },
+      { value: 'ja',     label: '日本語' },
     ];
 
     return `
