@@ -85,7 +85,7 @@ export class SettingsPage {
         <div class="card" style="margin-bottom: var(--space-4);">
           <div class="card-body" style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);">
             <span style="font-weight:600; font-size:14px;">${t('settings.language')}</span>
-            <select id="locale-select" class="form-select" style="width:auto; min-width:130px; padding:6px 10px; font-size:14px;">
+            <select id="locale-select" class="form-select" style="width:auto; min-width:130px; padding:6px 10px; font-size:14px; color:#1C1917; background-color:#FFFFFF;">
               ${localeOptions.map(opt => `
                 <option value="${opt.value}" ${savedLocale === opt.value ? 'selected' : ''}>${opt.label}</option>
               `).join('')}
