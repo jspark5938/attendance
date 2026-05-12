@@ -19,7 +19,10 @@ const USE_TEST_ADS = false;
 // 0 = 실제 지역 기반 (배포용)
 // 1 = EEA 강제 (GDPR 테스트)
 // 3 = 미국 규제 주 강제 (CCPA 테스트)
-const DEBUG_GEOGRAPHY = 1;
+const DEBUG_GEOGRAPHY = 0;
+
+// 테스트 기기 해시 ID (테스트 시 adb logcat | grep TestDeviceHashedId 로 확인 후 입력)
+const DEBUG_TEST_DEVICES = [];
 
 // 배너 로드 실패 시 최대 재시도 횟수 및 대기 시간
 const MAX_RETRY = 3;
@@ -137,6 +140,7 @@ export const AdsService = {
   async _requestConsent(AdMob) {
     const info = await AdMob.requestConsentInfo({
       debugGeography: DEBUG_GEOGRAPHY,
+      ...(DEBUG_TEST_DEVICES.length > 0 && { testDeviceIdentifiers: DEBUG_TEST_DEVICES }),
     });
     this._lastConsentInfo = info;
 
