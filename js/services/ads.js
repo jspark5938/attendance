@@ -15,6 +15,12 @@ const REAL_BANNER_ID = 'ca-app-pub-1007656354860622/8325774890';
 // true = 테스트 광고, false = 실제 광고
 const USE_TEST_ADS = false;
 
+// UMP 디버그 지역 설정
+// 0 = 실제 지역 기반 (배포용)
+// 1 = EEA 강제 (GDPR 테스트)
+// 3 = 미국 규제 주 강제 (CCPA 테스트)
+const DEBUG_GEOGRAPHY = 1;
+
 // 배너 로드 실패 시 최대 재시도 횟수 및 대기 시간
 const MAX_RETRY = 3;
 const RETRY_DELAY_MS = 30_000; // 30초
@@ -30,7 +36,7 @@ export const AdsService = {
     }
 
     if (isAndroid) {
-      await this._initAdMob();
+      await this._initAdMobWithConsent();
     } else {
       this._showAdSense();
     }
@@ -41,6 +47,22 @@ export const AdsService = {
     document.querySelectorAll('.ad-container').forEach(el => {
       el.style.display = '';
     });
+  },
+
+  /** Settings 페이지에서 사용자가 동의를 재설정할 때 호출 */
+  async showPrivacyOptions() {
+    try {
+      const AdMob = window.Capacitor?.Plugins?.AdMob;
+      if (!AdMob) return;
+      await AdMob.showPrivacyOptionsForm();
+    } catch (e) {
+      console.warn('[AdsService] showPrivacyOptionsForm failed:', e);
+    }
+  },
+
+  /** 마지막으로 캐시된 동의 정보의 privacyOptionsRequirementStatus 반환 */
+  getPrivacyOptionsStatus() {
+    return this._lastConsentInfo?.privacyOptionsRequirementStatus ?? null;
   },
 
   /** Hide all ad containers (premium users) */
@@ -88,6 +110,43 @@ export const AdsService = {
   /** --ad-bottom-offset CSS 변수 설정 (body 패딩·모달 높이 일괄 반영) */
   _setOffset(px) {
     document.documentElement.style.setProperty('--ad-bottom-offset', `${px}px`);
+  },
+
+  /** UMP 동의 획득 후 광고를 초기화하는 진입점 */
+  async _initAdMobWithConsent() {
+    try {
+      const AdMob = window.Capacitor?.Plugins?.AdMob;
+      if (!AdMob) return;
+
+      const canRequestAds = await this._requestConsent(AdMob);
+      if (!canRequestAds) {
+        console.warn('[AdsService] canRequestAds=false, skipping banner.');
+        return;
+      }
+
+      await this._initAdMob();
+    } catch (e) {
+      console.warn('[AdsService] consent/init failed:', e);
+    }
+  },
+
+  /**
+   * UMP 동의 요청.
+   * 동의 폼이 필요하면 표시하고, 광고 요청 가능 여부(canRequestAds)를 반환.
+   */
+  async _requestConsent(AdMob) {
+    const info = await AdMob.requestConsentInfo({
+      debugGeography: DEBUG_GEOGRAPHY,
+    });
+    this._lastConsentInfo = info;
+
+    if (info.isConsentFormAvailable && info.status === 'REQUIRED') {
+      const updated = await AdMob.showConsentForm();
+      this._lastConsentInfo = updated;
+      return updated.canRequestAds;
+    }
+
+    return info.canRequestAds;
   },
 
   /** AdMob: initialize banner via Capacitor plugin */
