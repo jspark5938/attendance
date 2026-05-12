@@ -178,8 +178,12 @@ export class SettingsPage {
       await setLocale(e.target.value);
     });
 
-    document.getElementById('privacy-options-btn')?.addEventListener('click', () => {
-      AdsService.showPrivacyOptions();
+    document.getElementById('privacy-options-btn')?.addEventListener('click', async () => {
+      try {
+        await AdsService.showPrivacyOptions();
+      } catch (e) {
+        Toast.error(t('messages.unknownError') || 'Error');
+      }
     });
   }
 

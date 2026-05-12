@@ -143,10 +143,10 @@ export const AdsService = {
     if (info.isConsentFormAvailable && info.status === 'REQUIRED') {
       const updated = await AdMob.showConsentForm();
       this._lastConsentInfo = updated;
-      return updated.canRequestAds;
+      return updated.canRequestAds ?? false;
     }
 
-    return info.canRequestAds;
+    return info.canRequestAds ?? false;
   },
 
   /** AdMob: initialize banner via Capacitor plugin */
