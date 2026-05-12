@@ -301,6 +301,9 @@ export default {
     appInfo:           'アプリ情報',
     version:           'バージョン',
     developer:         '開発者',
+    privacyOptions:    'プライバシー設定',
+    privacyOptionsDesc:'広告パーソナライズの同意を変更します',
+    privacyOptionsBtn: '変更',
   },
   login: {
     subtitle:     '生徒の出欠を簡単・素早く管理しましょう',

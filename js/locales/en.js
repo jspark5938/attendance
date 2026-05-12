@@ -302,6 +302,9 @@ export default {
     appInfo:           'App Info',
     version:           'Version',
     developer:         'Developer',
+    privacyOptions:    'Privacy Options',
+    privacyOptionsDesc:'Change ad personalization consent',
+    privacyOptionsBtn: 'Change',
   },
   login: {
     subtitle:     'Manage student attendance quickly and easily',

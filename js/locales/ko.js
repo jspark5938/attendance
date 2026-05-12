@@ -301,6 +301,9 @@ export default {
     appInfo:           '앱 정보',
     version:           '버전',
     developer:         '개발자',
+    privacyOptions:    '개인정보 설정',
+    privacyOptionsDesc:'광고 개인화 동의를 변경합니다',
+    privacyOptionsBtn: '변경',
   },
   login: {
     subtitle:     '학생 출결을 쉽고 빠르게 관리하세요',
