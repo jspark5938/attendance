@@ -9,6 +9,7 @@ import Modal from '../components/modal.js';
 import { AuthService } from '../services/auth.js';
 import { readLegacyIndexedDB, hasLegacyData } from '../services/migration.js';
 import { t, getLocale, setLocale } from '../utils/i18n.js';
+import AdsService from '../services/ads.js';
 
 export class SettingsPage {
   constructor() {
@@ -25,6 +26,8 @@ export class SettingsPage {
     this._hasLegacy = await hasLegacyData();
 
     const savedLocale = (await getByKey('settings', 'locale'))?.value || 'system';
+    const _isAndroid = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.();
+    const showPrivacyBtn = _isAndroid && AdsService.getPrivacyOptionsStatus() === 'REQUIRED';
 
     const avatarUrl = user?.photoURL
       ? `<img src="${user.photoURL}" alt="${t('settings.account')}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">`
@@ -144,6 +147,18 @@ export class SettingsPage {
               <span style="color:var(--color-text-muted);">${t('settings.developer')}</span>
               <span style="font-weight:600;">ISTECH</span>
             </div>
+            ${showPrivacyBtn ? `
+            <div class="divider"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; font-size:14px;">
+              <div>
+                <div style="font-weight:600; margin-bottom:2px;">${t('settings.privacyOptions')}</div>
+                <div style="font-size:13px; color:var(--color-text-muted);">${t('settings.privacyOptionsDesc')}</div>
+              </div>
+              <button class="btn btn-secondary" id="privacy-options-btn" style="flex-shrink:0; margin-left:var(--space-3);">
+                ${t('settings.privacyOptionsBtn')}
+              </button>
+            </div>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -161,6 +176,10 @@ export class SettingsPage {
 
     document.getElementById('locale-select')?.addEventListener('change', async (e) => {
       await setLocale(e.target.value);
+    });
+
+    document.getElementById('privacy-options-btn')?.addEventListener('click', () => {
+      AdsService.showPrivacyOptions();
     });
   }
 
