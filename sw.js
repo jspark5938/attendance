@@ -68,7 +68,6 @@ const CDN_ASSETS = [
   'https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js',
 ];
 
 // Install: cache all app shell files
