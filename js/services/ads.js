@@ -15,8 +15,8 @@ const TEST_REWARDED_ID = 'ca-app-pub-3940256099942544/5224354917';
 
 // 실제 광고 ID
 const REAL_BANNER_ID = 'ca-app-pub-1007656354860622/8325774890';
-// AdMob 콘솔에서 보상형 광고 단위 생성 후 입력. 비어 있으면 보상형 광고 없이 바로 내보내기 허용.
-const REAL_REWARDED_ID = '';
+// 비어 있으면 보상형 광고 없이 바로 내보내기 허용
+const REAL_REWARDED_ID = 'ca-app-pub-1007656354860622/3882307120';
 
 // true = 테스트 광고, false = 실제 광고
 const USE_TEST_ADS = false;
