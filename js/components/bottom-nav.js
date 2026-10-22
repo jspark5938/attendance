@@ -6,11 +6,11 @@ import { escapeHtml } from '../utils/dom.js';
 import { t } from '../utils/i18n.js';
 
 const NAV_ITEMS = [
-  { icon: '⊞', labelKey: 'nav.home',     hash: '#/',         key: 'home' },
-  { icon: '👥', labelKey: 'nav.groups',   hash: '#/groups',   key: 'groups' },
-  { icon: '📅', labelKey: 'nav.calendar', hash: '#/calendar', key: 'calendar' },
-  { icon: '📊', labelKey: 'nav.stats',    hash: '#/stats',    key: 'stats' },
-  { icon: '⚙',  labelKey: 'nav.settings', hash: '#/settings', key: 'settings' },
+  { icon: 'assets/icons/nav-home.png',     labelKey: 'nav.home',     hash: '#/',         key: 'home' },
+  { icon: 'assets/icons/nav-group.png',    labelKey: 'nav.groups',   hash: '#/groups',   key: 'groups' },
+  { icon: 'assets/icons/nav-calendar.png', labelKey: 'nav.calendar', hash: '#/calendar', key: 'calendar' },
+  { icon: 'assets/icons/nav-stats.png',    labelKey: 'nav.stats',    hash: '#/stats',    key: 'stats' },
+  { icon: 'assets/icons/nav-settings.png', labelKey: 'nav.settings', hash: '#/settings', key: 'settings' },
 ];
 
 export const BottomNav = {
@@ -35,7 +35,7 @@ export const BottomNav = {
              data-key="${item.key}"
              aria-label="${escapeHtml(label)}"
              aria-current="${this._isActive(item.hash) ? 'page' : 'false'}">
-            <span class="bottom-nav-icon" aria-hidden="true">${item.icon}</span>
+            <img class="bottom-nav-icon" src="${item.icon}" alt="" aria-hidden="true" width="24" height="24">
             <span class="bottom-nav-label">${escapeHtml(label)}</span>
           </a>`;
         }).join('')}

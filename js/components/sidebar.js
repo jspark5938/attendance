@@ -7,11 +7,11 @@ import { escapeHtml } from '../utils/dom.js';
 import { t } from '../utils/i18n.js';
 
 const NAV_ITEMS = [
-  { icon: '⊞', labelKey: 'nav.dashboard', hash: '#/' },
-  { icon: '👥', labelKey: 'nav.groupMgmt', hash: '#/groups' },
-  { icon: '📅', labelKey: 'nav.calendar',  hash: '#/calendar' },
-  { icon: '📊', labelKey: 'nav.stats',     hash: '#/stats' },
-  { icon: '⚙',  labelKey: 'nav.settings',  hash: '#/settings' },
+  { icon: 'assets/icons/nav-home.png',     labelKey: 'nav.dashboard', hash: '#/' },
+  { icon: 'assets/icons/nav-group.png',    labelKey: 'nav.groupMgmt', hash: '#/groups' },
+  { icon: 'assets/icons/nav-calendar.png', labelKey: 'nav.calendar',  hash: '#/calendar' },
+  { icon: 'assets/icons/nav-stats.png',    labelKey: 'nav.stats',     hash: '#/stats' },
+  { icon: 'assets/icons/nav-settings.png', labelKey: 'nav.settings',  hash: '#/settings' },
 ];
 
 export const Sidebar = {
@@ -39,7 +39,7 @@ export const Sidebar = {
           <a href="${item.hash}"
              class="sidebar-nav-item${this._isActive(item.hash, current) ? ' active' : ''}"
              aria-current="${this._isActive(item.hash, current) ? 'page' : 'false'}">
-            <span class="nav-icon" aria-hidden="true">${item.icon}</span>
+            <img class="nav-icon" src="${item.icon}" alt="" aria-hidden="true" width="20" height="20">
             ${escapeHtml(t(item.labelKey))}
           </a>
         `).join('')}
