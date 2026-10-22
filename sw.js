@@ -60,6 +60,12 @@ const SHELL_ASSETS = [
   '/js/firebase-sdk/firebase-auth.js',
   '/js/firebase-sdk/firebase-firestore.js',
   '/js/firebase-sdk/firebase-analytics.js',
+  '/js/vendor/jspdf.umd.min.js',
+  '/assets/icons/nav-home.png',
+  '/assets/icons/nav-group.png',
+  '/assets/icons/nav-calendar.png',
+  '/assets/icons/nav-stats.png',
+  '/assets/icons/nav-settings.png',
 ];
 
 const CDN_ASSETS = [
@@ -67,7 +73,6 @@ const CDN_ASSETS = [
   'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css',
   'https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
 ];
 
 // Install: cache all app shell files
