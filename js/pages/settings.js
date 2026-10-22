@@ -152,7 +152,7 @@ export class SettingsPage {
           <div class="card-body" style="display:flex; flex-direction:column; gap:var(--space-2);">
             <div style="display:flex; justify-content:space-between; font-size:14px;">
               <span style="color:var(--color-text-muted);">${t('settings.version')}</span>
-              <span style="font-weight:600;">1.0.0</span>
+              <span style="font-weight:600;" id="app-version">Web</span>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:14px;">
               <span style="color:var(--color-text-muted);">${t('settings.developer')}</span>
@@ -180,6 +180,7 @@ export class SettingsPage {
     document.getElementById('logout-btn')?.addEventListener('click', () => this._logout());
     document.getElementById('login-btn')?.addEventListener('click', () => this._loginFromGuest());
     document.getElementById('save-alert-settings-btn')?.addEventListener('click', () => this._saveAlertSettings());
+    this._showAppVersion();
 
     if (this._hasLegacy) {
       document.getElementById('migrate-legacy-btn')?.addEventListener('click', () => this._migrateLegacy());
@@ -241,6 +242,17 @@ export class SettingsPage {
     } catch (e) {
       Toast.error(t('messages.migrateFailed', {msg: e.message}));
       if (btn) { btn.disabled = false; btn.textContent = t('settings.migrateBtn'); }
+    }
+  }
+
+  /** Android 빌드의 versionName/versionCode 표시 (웹은 'Web' 유지) */
+  async _showAppVersion() {
+    try {
+      const info = await window.Capacitor?.Plugins?.App?.getInfo?.();
+      const el = document.getElementById('app-version');
+      if (info?.version && el) el.textContent = `${info.version} (${info.build})`;
+    } catch (e) {
+      console.warn('[Settings] App.getInfo failed:', e);
     }
   }
 
