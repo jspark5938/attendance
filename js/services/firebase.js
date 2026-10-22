@@ -14,5 +14,13 @@ export const db = initializeFirestore(app, {
 });
 
 export const auth = getAuth(app);
-export const analytics = getAnalytics(app);
-export { app };
+
+// Analytics는 Capacitor 환경이나 이미 초기화된 경우 예외를 던질 수 있음.
+// top-level throw가 모듈 전체 로드 실패로 이어지는 것을 방지하기 위해 격리.
+let analytics = null;
+try {
+  analytics = getAnalytics(app);
+} catch (e) {
+  console.warn('[Firebase] Analytics init skipped:', e?.message || e);
+}
+export { analytics, app };

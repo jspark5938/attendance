@@ -167,8 +167,20 @@ async function init() {
   // Handle Google redirect result (web only)
   await AuthService.handleRedirectResult().catch(() => {});
 
+  // Firebase Auth가 응답하지 않을 경우를 대비한 안전망 타임아웃.
+  // onAuthStateChanged 첫 콜백은 persistence 복원 후에 발화하는데,
+  // 오프라인이거나 IndexedDB가 락된 경우 콜백이 오지 않아 무한 로딩이 됨.
+  const _authTimeoutId = setTimeout(async () => {
+    const loadingEl = document.getElementById('app-loading');
+    if (!loadingEl) return; // 이미 처리됨
+    console.warn('[App] Firebase Auth timeout — falling back to login page');
+    loadingEl.remove();
+    await _showLoginPage();
+  }, 10_000);
+
   // Listen for auth state changes
   AuthService.onAuthStateChanged(async (user) => {
+    clearTimeout(_authTimeoutId);
     document.getElementById('app-loading')?.remove();
     if (user) {
       AuthService.exitGuestMode();
