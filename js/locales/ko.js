@@ -253,9 +253,7 @@ export default {
   },
   export: {
     title:     '내보내기',
-    dateRange: '기간 선택',
-    startDate: '시작일',
-    endDate:   '종료일',
+    selectMonth: '내보낼 월',
     csvBtn:    '📄 CSV 내보내기',
     pdfBtn:    '📑 PDF 내보내기',
     csvNote:            '* CSV 파일은 Excel에서 올바르게 열립니다.',

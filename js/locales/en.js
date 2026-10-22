@@ -254,9 +254,7 @@ export default {
   },
   export: {
     title:     'Export',
-    dateRange: 'Date Range',
-    startDate: 'Start Date',
-    endDate:   'End Date',
+    selectMonth: 'Select Month',
     csvBtn:    '📄 Export CSV',
     pdfBtn:    '📑 Export PDF',
     csvNote:            '* CSV files open correctly in Excel.',

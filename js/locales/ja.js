@@ -253,9 +253,7 @@ export default {
   },
   export: {
     title:     'エクスポート',
-    dateRange: '期間選択',
-    startDate: '開始日',
-    endDate:   '終了日',
+    selectMonth: 'エクスポートする月',
     csvBtn:    '📄 CSVエクスポート',
     pdfBtn:    '📑 PDFエクスポート',
     csvNote:            '* CSVファイルはExcelで正しく開けます。',

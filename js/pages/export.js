@@ -7,14 +7,16 @@ import { GroupsDB } from '../db/groups.js';
 import { ExportService } from '../services/export.js';
 import { AdsService, RewardResult } from '../services/ads.js';
 import Toast from '../components/toast.js';
-import { escapeHtml } from '../utils/dom.js';
-import { todayStr, shiftDate } from '../utils/date.js';
+import { todayStr, shiftMonth, formatYearMonth, getDaysInMonth } from '../utils/date.js';
 import { t } from '../utils/i18n.js';
 
 export class ExportPage {
   constructor(params) {
     this.groupId = params.id;
     this.group = null;
+    // 내보내기는 한 달 단위. 미래 월은 선택 불가
+    this.maxYearMonth = todayStr().slice(0, 7);
+    this.yearMonth = this.maxYearMonth;
   }
 
   async render() {
@@ -23,30 +25,24 @@ export class ExportPage {
       return `<div class="page-body"><div class="empty-state"><div class="empty-state-title">${t('common.groupNotFound')}</div></div></div>`;
     }
 
-    const today = todayStr();
-    const monthStart = today.slice(0, 7) + '-01';
-
     return `
       <div class="page-body" style="max-width: 520px;">
-        ${this._exportForm(monthStart, today)}
+        ${this._exportForm()}
       </div>
     `;
   }
 
-  _exportForm(defaultStart, defaultEnd) {
+  _exportForm() {
     return `
       <div class="card">
-        <div class="card-header"><div class="card-title">${t('export.dateRange')}</div></div>
+        <div class="card-header"><div class="card-title">${t('export.selectMonth')}</div></div>
         <div class="card-body">
-          <div class="form-group">
-            <label class="form-label" for="start-date">${t('export.startDate')}</label>
-            <input type="date" id="start-date" class="form-input" value="${defaultStart}" max="${defaultEnd}">
+          <div class="date-nav" style="justify-content:center; margin-bottom: var(--space-4);">
+            <button class="date-nav-btn" id="prev-month">←</button>
+            <span class="date-nav-label" id="month-label">${formatYearMonth(this.yearMonth)}</span>
+            <button class="date-nav-btn" id="next-month" disabled>→</button>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="end-date">${t('export.endDate')}</label>
-            <input type="date" id="end-date" class="form-input" value="${defaultEnd}" max="${defaultEnd}">
-          </div>
-          <div style="display:flex; gap: var(--space-2); margin-top: var(--space-2); flex-wrap:wrap;">
+          <div style="display:flex; gap: var(--space-2); flex-wrap:wrap;">
             <button class="btn btn-primary" id="export-csv-btn">${t('export.csvBtn')}</button>
             <button class="btn btn-secondary" id="export-pdf-btn">${t('export.pdfBtn')}</button>
           </div>
@@ -64,45 +60,27 @@ export class ExportPage {
   }
 
   async mount() {
+    document.getElementById('prev-month')?.addEventListener('click', () => this._changeMonth(-1));
+    document.getElementById('next-month')?.addEventListener('click', () => this._changeMonth(1));
     document.getElementById('export-csv-btn')?.addEventListener('click', () => this._doExport('csv'));
     document.getElementById('export-pdf-btn')?.addEventListener('click', () => this._doExport('pdf'));
-    this._initDatePickers();
   }
 
-  _initDatePickers() {
-    if (!window.flatpickr) return;
-    const today = todayStr();
-
-    // fpEnd는 fpStart의 onChange에서 참조되므로 let으로 선언
-    let fpEnd;
-    const fpStart = window.flatpickr('#start-date', {
-      locale: 'ko',
-      maxDate: today,
-      onChange: ([date], dateStr) => {
-        if (date && fpEnd) fpEnd.set('minDate', dateStr);
-      },
-    });
-
-    fpEnd = window.flatpickr('#end-date', {
-      locale: 'ko',
-      maxDate: today,
-      minDate: document.getElementById('start-date')?.value || undefined,
-      onChange: ([date], dateStr) => {
-        if (date && fpStart) fpStart.set('maxDate', dateStr);
-      },
-    });
-
-    this._fpStart = fpStart;
-    this._fpEnd   = fpEnd;
+  _changeMonth(delta) {
+    const next = shiftMonth(this.yearMonth, delta);
+    if (next > this.maxYearMonth) return;
+    this.yearMonth = next;
+    document.getElementById('month-label').textContent = formatYearMonth(this.yearMonth);
+    document.getElementById('next-month').disabled = this.yearMonth >= this.maxYearMonth;
   }
 
   async _doExport(type) {
-    const startDate = document.getElementById('start-date')?.value;
-    const endDate   = document.getElementById('end-date')?.value;
-
-    if (!startDate || !endDate) { Toast.error(t('messages.dateRequired')); return; }
-    if (startDate > endDate)    { Toast.error(t('messages.dateRangeError')); return; }
     if (this._busy) return;
+
+    const [year, month] = this.yearMonth.split('-').map(Number);
+    const days = getDaysInMonth(year, month);
+    const startDate = days[0];
+    const endDate   = days[days.length - 1];
 
     this._setBusy(true);
     try {
@@ -129,14 +107,13 @@ export class ExportPage {
   /** 광고 로드·내보내기 중 버튼 중복 클릭 방지 */
   _setBusy(busy) {
     this._busy = busy;
-    ['export-csv-btn', 'export-pdf-btn'].forEach(id => {
+    ['export-csv-btn', 'export-pdf-btn', 'prev-month'].forEach(id => {
       const btn = document.getElementById(id);
       if (btn) btn.disabled = busy;
     });
+    const nextBtn = document.getElementById('next-month');
+    if (nextBtn) nextBtn.disabled = busy || this.yearMonth >= this.maxYearMonth;
   }
 
-  destroy() {
-    this._fpStart?.destroy();
-    this._fpEnd?.destroy();
-  }
+  destroy() {}
 }
