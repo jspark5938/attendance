@@ -69,6 +69,7 @@ export class GroupDetailPage {
           <a href="#/groups/${this.groupId}/attend" class="btn btn-outline btn-sm">${t('groupDetail.attendLink')}</a>
           <a href="#/groups/${this.groupId}/calendar" class="btn btn-outline btn-sm">${t('groupDetail.calendarLink')}</a>
           <a href="#/groups/${this.groupId}/stats" class="btn btn-outline btn-sm">${t('groupDetail.statsLink')}</a>
+          <a href="#/groups/${this.groupId}/export" class="btn btn-outline btn-sm">${t('groupDetail.exportLink')}</a>
         </div>
 
         <!-- 구성원 목록 -->

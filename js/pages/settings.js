@@ -135,6 +135,17 @@ export class SettingsPage {
           </div>
         </div>
 
+        <!-- Data export -->
+        <div class="card" style="margin-bottom: var(--space-4);">
+          <div class="card-body" style="display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);">
+            <div>
+              <div style="font-weight:600; margin-bottom:2px;">${t('settings.exportTitle')}</div>
+              <div style="font-size:13px; color:var(--color-text-muted);">${t('settings.exportDesc')}</div>
+            </div>
+            <a href="#/export" class="btn btn-secondary" style="flex-shrink:0;">${t('settings.exportBtn')}</a>
+          </div>
+        </div>
+
         <!-- App info -->
         <div class="card">
           <div class="card-header"><div class="card-title">${t('settings.appInfo')}</div></div>

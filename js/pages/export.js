@@ -5,6 +5,7 @@
 
 import { GroupsDB } from '../db/groups.js';
 import { ExportService } from '../services/export.js';
+import { AdsService, RewardResult } from '../services/ads.js';
 import Toast from '../components/toast.js';
 import { escapeHtml } from '../utils/dom.js';
 import { todayStr, shiftDate } from '../utils/date.js';
@@ -49,6 +50,10 @@ export class ExportPage {
             <button class="btn btn-primary" id="export-csv-btn">${t('export.csvBtn')}</button>
             <button class="btn btn-secondary" id="export-pdf-btn">${t('export.pdfBtn')}</button>
           </div>
+          ${AdsService.isRewardedAvailable() ? `
+          <div style="font-size:13px; color:var(--color-text-muted); margin-top:var(--space-3);">
+            ▶ ${t('export.adNotice')}
+          </div>` : ''}
         </div>
       </div>
       <div style="font-size:13px; color:var(--color-text-muted); margin-top:var(--space-3);">
@@ -97,8 +102,17 @@ export class ExportPage {
 
     if (!startDate || !endDate) { Toast.error(t('messages.dateRequired')); return; }
     if (startDate > endDate)    { Toast.error(t('messages.dateRangeError')); return; }
+    if (this._busy) return;
 
+    this._setBusy(true);
     try {
+      // 광고를 띄울 수 없는 경우(웹·프리미엄·로드 실패 등)는 광고 없이 진행
+      const reward = await AdsService.showRewardedAd();
+      if (reward === RewardResult.DISMISSED) {
+        Toast.info(t('export.adDismissed'));
+        return;
+      }
+
       if (type === 'csv') {
         await ExportService.exportCSV(this.group, startDate, endDate);
       } else {
@@ -107,7 +121,18 @@ export class ExportPage {
       Toast.success(t('messages.exportDone'));
     } catch (e) {
       Toast.error(t('messages.exportFailed', {msg: e.message}));
+    } finally {
+      this._setBusy(false);
     }
+  }
+
+  /** 광고 로드·내보내기 중 버튼 중복 클릭 방지 */
+  _setBusy(busy) {
+    this._busy = busy;
+    ['export-csv-btn', 'export-pdf-btn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.disabled = busy;
+    });
   }
 
   destroy() {

@@ -1,7 +1,7 @@
 /**
  * Group picker page
  * 달력/통계처럼 그룹을 먼저 선택해야 하는 페이지에서 사용.
- * mode: 'calendar' | 'stats'
+ * mode: 'calendar' | 'stats' | 'export'
  */
 
 import { GroupsDB } from '../db/groups.js';
@@ -11,6 +11,8 @@ import { t } from '../utils/i18n.js';
 const MODE_CONFIG = {
   calendar: { labelKey: 'nav.calendar', icon: '📅', hash: (id) => `#/groups/${id}/calendar` },
   stats:    { labelKey: 'nav.stats',    icon: '📊', hash: (id) => `#/groups/${id}/stats` },
+  export:   { labelKey: 'export.title', icon: '📤', hash: (id) => `#/groups/${id}/export`,
+              selectKey: 'groupPicker.selectGroupExport', emptyKey: 'groupPicker.noGroupsDescExport' },
 };
 
 export class GroupPickerPage {
@@ -30,12 +32,12 @@ export class GroupPickerPage {
           <div class="empty-state">
             <div class="empty-state-icon">${icon}</div>
             <div class="empty-state-title">${t('groupPicker.noGroups')}</div>
-            <div class="empty-state-desc">${t('groupPicker.noGroupsDesc', { label })}</div>
+            <div class="empty-state-desc">${t(this.config.emptyKey ?? 'groupPicker.noGroupsDesc', { label })}</div>
             <a href="#/groups" class="btn btn-primary" style="margin-top:12px;">${t('groupPicker.addGroup')}</a>
           </div>
         ` : `
           <div style="margin-bottom: var(--space-4); font-size: var(--font-size-sm); color: var(--color-text-muted);">
-            ${t('groupPicker.selectGroup', { label })}
+            ${t(this.config.selectKey ?? 'groupPicker.selectGroup', { label })}
           </div>
           <div class="grid-2">
             ${groups.map(g => `

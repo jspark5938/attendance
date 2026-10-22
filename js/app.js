@@ -80,6 +80,7 @@ async function _initApp() {
   _router.register('/groups/:id/export', (p) => new ExportPage(p));
   _router.register('/calendar', () => new CalendarAllPage());
   _router.register('/stats',    () => new GroupPickerPage({ mode: 'stats' }));
+  _router.register('/export',   () => new GroupPickerPage({ mode: 'export' }));
   _router.register('/settings', () => new SettingsPage());
   _router.register('/premium', () => new PremiumPage());
 
